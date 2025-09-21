@@ -4,11 +4,15 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { LoginModal } from '@/components/auth/LoginModal';
 
 const Hero = () => {
+  const { user } = useAuth();
   const [currentWord, setCurrentWord] = useState(0);
   const words = ['탐험하고', '배우고', '만들고', '공유하세요'];
   const [isVisible, setIsVisible] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
 
   useEffect(() => {
     setIsVisible(true);
@@ -62,17 +66,37 @@ const Hero = () => {
             실제 데이터를 활용해 진짜 여행 전문가처럼 계획을 세워봐요! 🚀
           </p>
 
-          {/* 시작하기 버튼 */}
-          <div className="mb-12">
-            <Button 
-              size="xl" 
-              variant="fun"
-              className="text-xl px-12 py-6 shadow-2xl border-4 border-white/30"
-              onClick={() => document.getElementById('main-content')?.scrollIntoView({ behavior: 'smooth' })}
-            >
-              <span className="text-2xl mr-3">🚀</span>
-              지금 시작하기!
-            </Button>
+          {/* 시작하기 버튼들 */}
+          <div className="mb-12 space-y-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              <Button 
+                size="xl" 
+                variant="fun"
+                className="text-xl px-12 py-6 shadow-2xl border-4 border-white/30"
+                onClick={() => document.getElementById('main-content')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <span className="text-2xl mr-3">🚀</span>
+                지금 시작하기!
+              </Button>
+              
+              {!user && (
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  className="text-lg px-8 py-4 bg-white/20 hover:bg-white/30 border-2 border-white text-white backdrop-blur-md"
+                  onClick={() => setShowLoginModal(true)}
+                >
+                  <span className="text-xl mr-2">👤</span>
+                  로그인하고 저장하기
+                </Button>
+              )}
+            </div>
+            
+            {!user && (
+              <p className="text-sm text-white/80">
+                💾 로그인하면 여행 계획을 저장하고 업적을 모을 수 있어요!
+              </p>
+            )}
           </div>
 
           {/* 기능 카드들 */}
@@ -110,6 +134,12 @@ const Hero = () => {
           </div>
         </div>
       </div>
+      
+      {/* 로그인 모달 */}
+      <LoginModal 
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
     </div>
   );
 };

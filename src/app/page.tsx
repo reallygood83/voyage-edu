@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Hero from '@/components/Hero';
 import CountrySelector from '@/components/CountrySelector';
 import TravelPlanBuilder from '@/components/TravelPlanBuilder';
@@ -12,8 +12,12 @@ import ProgressTracker from '@/components/gamification/ProgressTracker';
 import AchievementBadge, { ACHIEVEMENTS } from '@/components/gamification/AchievementBadge';
 import AchievementSystem from '@/components/gamification/AchievementSystem';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { UserMenu } from '@/components/auth/UserMenu';
+import { WelcomeMessage } from '@/components/auth/WelcomeMessage';
 
 export default function Home() {
+  const { user, userProfile, loading, addPoints, addAchievement } = useAuth();
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [selectedCities, setSelectedCities] = useState<City[]>([]);
   const [travelPlan, setTravelPlan] = useState<TravelPlan | null>(null);
@@ -32,43 +36,68 @@ export default function Home() {
 
   const stepNames = ['🌍 국가/도시 검색', '✈️ 여행 계획', '📢 홍보 자료'];
 
-  // 업적 체크 및 포인트 지급
-  const checkAchievements = () => {
-    let newUnlocked = [...unlockedAchievements];
-    let newPoints = userPoints;
-    
-    // 첫 나라 선택 업적
-    if (selectedCountry && !newUnlocked.includes('first_explorer')) {
-      newUnlocked.push('first_explorer');
-      newPoints += 10;
+  // 인증된 사용자의 업적 체크 및 포인트 지급
+  const checkAchievements = async () => {
+    if (!user || !userProfile) {
+      // 비로그인 사용자는 로컬 업적만 추적
+      let newUnlocked = [...unlockedAchievements];
+      let newPoints = userPoints;
+      
+      if (selectedCountry && !newUnlocked.includes('first_explorer')) {
+        newUnlocked.push('first_explorer');
+        newPoints += 10;
+      }
+      
+      if (selectedCities.length >= 3 && !newUnlocked.includes('city_explorer')) {
+        newUnlocked.push('city_explorer');
+        newPoints += 20;
+      }
+      
+      if (travelPlan && !newUnlocked.includes('plan_master')) {
+        newUnlocked.push('plan_master');
+        newPoints += 30;
+      }
+      
+      if (activeTab === 'promote' && !newUnlocked.includes('designer')) {
+        newUnlocked.push('designer');
+        newPoints += 25;
+      }
+      
+      if (activeTab === 'promote' && travelPlan && !newUnlocked.includes('travel_expert')) {
+        newUnlocked.push('travel_expert');
+        newPoints += 50;
+      }
+      
+      setUnlockedAchievements(newUnlocked);
+      setUserPoints(newPoints);
+      return;
+    }
+
+    // 로그인 사용자는 Firebase에 업적 저장
+    if (selectedCountry && !userProfile.achievements.includes('first_explorer')) {
+      await addAchievement('first_explorer');
+      await addPoints(10);
     }
     
-    // 3개 도시 선택 업적
-    if (selectedCities.length >= 3 && !newUnlocked.includes('city_explorer')) {
-      newUnlocked.push('city_explorer');
-      newPoints += 20;
+    if (selectedCities.length >= 3 && !userProfile.achievements.includes('city_explorer')) {
+      await addAchievement('city_explorer');
+      await addPoints(20);
     }
     
-    // 여행 계획 완료 업적
-    if (travelPlan && !newUnlocked.includes('plan_master')) {
-      newUnlocked.push('plan_master');
-      newPoints += 30;
+    if (travelPlan && !userProfile.achievements.includes('plan_master')) {
+      await addAchievement('plan_master');
+      await addPoints(30);
     }
     
-    // 디자이너 업적 (promote 단계에서)
-    if (activeTab === 'promote' && !newUnlocked.includes('designer')) {
-      newUnlocked.push('designer');
-      newPoints += 25;
+    if (activeTab === 'promote' && !userProfile.achievements.includes('designer')) {
+      await addAchievement('designer');
+      await addPoints(25);
     }
     
-    // 여행 전문가 업적 (모든 단계 완료)
-    if (activeTab === 'promote' && travelPlan && !newUnlocked.includes('travel_expert')) {
-      newUnlocked.push('travel_expert');
-      newPoints += 50;
+    if (activeTab === 'promote' && travelPlan && !userProfile.achievements.includes('travel_expert')) {
+      await addAchievement('travel_expert');
+      await addPoints(50);
     }
-    
-    setUnlockedAchievements(newUnlocked);
-    setUserPoints(newPoints);
   };
 
   // 단계 변경 시 업적 체크
@@ -83,15 +112,26 @@ export default function Home() {
       <div id="main-content" className="container mx-auto px-4 py-8">
         {/* 상단 사용자 정보 */}
         <div className="flex justify-between items-center mb-8">
-          <div className="flex items-center gap-4">
-            <Badge variant="achievement" className="text-lg py-2 px-4">
-              🏆 {userPoints}포인트
-            </Badge>
-            <span className="text-lg font-semibold text-gray-700">
-              👋 안녕하세요, 여행가님!
-            </span>
-          </div>
+          {user && userProfile ? (
+            <UserMenu />
+          ) : (
+            <div className="flex items-center gap-4">
+              <Badge variant="achievement" className="text-lg py-2 px-4">
+                🏆 {userPoints}포인트
+              </Badge>
+              <span className="text-lg font-semibold text-gray-700">
+                👋 안녕하세요, 여행가님!
+              </span>
+            </div>
+          )}
         </div>
+
+        {/* 비로그인 사용자에게 로그인 안내 */}
+        {!user && !loading && (
+          <div className="mb-8">
+            <WelcomeMessage />
+          </div>
+        )}
 
         {/* 진행률 트래커 */}
         <div className="mb-12">
@@ -169,8 +209,8 @@ export default function Home() {
         {/* 업적 및 게임화 시스템 */}
         <div className="mt-12">
           <AchievementSystem 
-            unlockedAchievements={unlockedAchievements}
-            totalPoints={userPoints}
+            unlockedAchievements={user && userProfile ? userProfile.achievements : unlockedAchievements}
+            totalPoints={user && userProfile ? userProfile.points : userPoints}
           />
         </div>
       </div>
