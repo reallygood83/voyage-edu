@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { City, TravelPlan } from '@/types';
+import { City, TravelPlan, StandardizedFlight } from '@/types';
 import { TravelPriceService, FlightPrice, HotelPrice, ActivityPrice } from '@/lib/travelApi';
+import { AmadeusService } from '@/services/amadeusService';
 
 interface EnhancedTravelPlanBuilderProps {
   selectedCities: City[];
@@ -70,7 +71,7 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
   });
 
   // 실시간 가격 데이터
-  const [flightPrices, setFlightPrices] = useState<FlightPrice[]>([]);
+  const [flightPrices, setFlightPrices] = useState<StandardizedFlight[]>([]);
   const [hotelOptions, setHotelOptions] = useState<Record<string, HotelPrice[]>>({});
   const [activityOptions, setActivityOptions] = useState<Record<string, ActivityPrice[]>>({});
   
@@ -89,9 +90,10 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
   const [dailySchedules, setDailySchedules] = useState<DailySchedule[]>([]);
   
   // 선택된 옵션들
-  const [selectedFlight, setSelectedFlight] = useState<FlightPrice | null>(null);
+  const [selectedFlight, setSelectedFlight] = useState<StandardizedFlight | null>(null);
   const [selectedHotels, setSelectedHotels] = useState<Record<string, HotelPrice>>({});
   const [selectedActivities, setSelectedActivities] = useState<Record<string, ActivityPrice[]>>({});
+  const [noFlightNeeded, setNoFlightNeeded] = useState(false);
 
   const steps = [
     '📅 여행 기본 정보',
@@ -115,14 +117,34 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
     setLoading(true);
     try {
       // 항공료 조회
-      const flights = await TravelPriceService.getFlightPrices(
-        'Seoul',
-        selectedCities[0].name,
-        tripInfo.startDate,
-        tripInfo.endDate,
-        tripInfo.travelers
-      );
-      setFlightPrices(flights);
+      // Amadeus API를 사용한 항공편 검색
+      try {
+        const flights = await AmadeusService.searchFlights({
+           origin: 'ICN', // 인천국제공항
+           destination: selectedCities[0].iataCode || 'NRT', // 기본값으로 나리타 공항
+           departureDate: tripInfo.startDate,
+           returnDate: tripInfo.endDate,
+           adults: tripInfo.travelers,
+           children: 0,
+           infants: 0,
+           travelClass: 'ECONOMY',
+           nonStop: false,
+           maxPrice: 2000000,
+           currencyCode: 'KRW'
+         });
+        setFlightPrices(flights);
+      } catch (error) {
+        console.error('Amadeus API 오류, 목업 데이터 사용:', error);
+        // Amadeus API 실패 시 목업 데이터 사용
+        const mockFlights = AmadeusService.getMockFlights(
+          'ICN',
+          selectedCities[0].iataCode || 'NRT',
+          tripInfo.startDate,
+          tripInfo.endDate,
+          tripInfo.travelers
+        );
+        setFlightPrices(mockFlights);
+      }
 
       // 호텔 옵션 조회
       const hotels: Record<string, HotelPrice[]> = {};
@@ -433,50 +455,126 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
         <p className="text-gray-600">서울 ↔ {selectedCities[0]?.name} 항공편을 선택해주세요</p>
       </div>
 
-      {loading ? (
-        <div className="text-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">항공료 검색 중...</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {flightPrices.map((flight, index) => (
-            <Card 
-              key={index}
-              className={`cursor-pointer transition-all ${
-                selectedFlight?.airline === flight.airline ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-md'
-              }`}
-              onClick={() => setSelectedFlight(flight)}
-            >
-              <CardContent className="p-4">
-                <div className="flex justify-between items-center">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4">
-                      <div className="font-bold text-lg">{flight.airline}</div>
-                      <Badge variant={flight.stops === 0 ? "default" : "secondary"}>
-                        {flight.stops === 0 ? '직항' : '경유'}
-                      </Badge>
-                    </div>
-                    <div className="text-sm text-gray-600 mt-1">
-                      {flight.duration} • {flight.origin} → {flight.destination}
-                    </div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      {flight.departureDate} ~ {flight.returnDate}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {flight.price.toLocaleString()}원
-                    </div>
-                    <div className="text-sm text-gray-500">
-                      {tripInfo.travelers}명 기준
-                    </div>
-                  </div>
+      {/* 항공권 필요 없음 옵션 */}
+      <Card 
+        className={`cursor-pointer transition-all ${
+          noFlightNeeded ? 'ring-2 ring-green-500 bg-green-50' : 'hover:shadow-md border-dashed'
+        }`}
+        onClick={() => {
+          setNoFlightNeeded(!noFlightNeeded);
+          if (!noFlightNeeded) {
+            setSelectedFlight(null);
+          }
+        }}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="text-2xl">🚗</div>
+              <div>
+                <div className="font-bold text-lg text-green-700">항공권 필요 없음</div>
+                <div className="text-sm text-gray-600">
+                  자차 이용, 기타 교통수단 이용, 또는 현지 거주
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-green-600">0원</div>
+              <div className="text-sm text-gray-500">교통비 절약</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {!noFlightNeeded && (
+        <>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+              <p className="mt-2 text-gray-600">항공료 검색 중...</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {flightPrices.map((flight, index) => (
+                <Card 
+                  key={flight.id || index}
+                  className={`cursor-pointer transition-all ${
+                    selectedFlight?.id === flight.id ? 'ring-2 ring-blue-500 bg-blue-50' : 'hover:shadow-md'
+                  }`}
+                  onClick={() => setSelectedFlight(flight)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4 mb-2">
+                          <div className="font-bold text-lg">{flight.airline}</div>
+                          <Badge variant={flight.stops === 0 ? "default" : "secondary"}>
+                            {flight.stops === 0 ? '직항' : `${flight.stops}회 경유`}
+                          </Badge>
+                          <Badge variant="outline">{flight.cabin}</Badge>
+                        </div>
+                        
+                        {/* 출발/도착 시간 정보 */}
+                        <div className="flex items-center gap-4 mb-2">
+                          <div className="text-sm">
+                            <span className="font-medium">{flight.departureTime}</span>
+                            <span className="text-gray-500 ml-1">{flight.origin}</span>
+                          </div>
+                          <div className="text-gray-400">→</div>
+                          <div className="text-sm">
+                            <span className="font-medium">{flight.arrivalTime}</span>
+                            <span className="text-gray-500 ml-1">{flight.destination}</span>
+                          </div>
+                        </div>
+                        
+                        <div className="text-sm text-gray-600 mb-1">
+                          소요시간: {flight.duration}
+                        </div>
+                        
+                        {/* 경유지 정보 */}
+                        {flight.stops > 0 && flight.stopoverCities && flight.stopoverCities.length > 0 && (
+                          <div className="text-xs text-orange-600 bg-orange-50 px-2 py-1 rounded mb-1">
+                            경유: {flight.stopoverCities.join(', ')}
+                          </div>
+                        )}
+                        
+                        <div className="text-xs text-gray-500">
+                          {flight.departureDate} ~ {flight.returnDate || flight.departureDate}
+                        </div>
+
+                        {/* 추가 정보 */}
+                        <div className="flex gap-2 mt-2">
+                          <Badge variant="outline" className="text-xs">
+                            좌석 {flight.availableSeats}석
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">
+                            수하물 {flight.baggage.checkedBags}개
+                          </Badge>
+                          {flight.isRefundable && (
+                            <Badge variant="outline" className="text-xs text-green-600">
+                              환불가능
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-blue-600">
+                          {flight.price.toLocaleString()}원
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {tripInfo.travelers}명 기준
+                        </div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {flight.currency}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       <div className="flex justify-between">
@@ -485,7 +583,7 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
         </Button>
         <Button 
           onClick={() => setCurrentStep(2)}
-          disabled={!selectedFlight}
+          disabled={!selectedFlight && !noFlightNeeded}
         >
           다음: 숙박 선택
         </Button>

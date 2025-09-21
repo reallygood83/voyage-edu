@@ -16,6 +16,7 @@ export interface City {
   longitude: number;
   population?: number;
   timezone?: string;
+  iataCode?: string; // 공항 코드
 }
 
 export interface Flight {
@@ -130,7 +131,7 @@ export interface TravelPlan {
   // Enhanced travel plan fields
   budgetBreakdown?: BudgetBreakdown;
   dailySchedules?: DailySchedule[];
-  selectedFlight?: FlightPrice;
+  selectedFlight?: FlightPrice | StandardizedFlight;
   selectedHotels?: Record<string, HotelPrice>;
   selectedActivities?: Record<string, ActivityPrice[]>;
   travelers?: number;
@@ -150,6 +151,35 @@ export interface FlightPrice {
   airline: string;
   duration: string;
   stops: number;
+  stopoverCities?: string[];
+  departureTime: string;
+  arrivalTime: string;
+}
+
+export interface StandardizedFlight {
+  id: string;
+  airline: string;
+  airlineCode: string;
+  flightNumber: string;
+  origin: string;
+  destination: string;
+  departureDate: string;
+  returnDate?: string;
+  departureTime: string;
+  arrivalTime: string;
+  duration: string;
+  stops: number;
+  stopoverCities: string[];
+  price: number;
+  currency: string;
+  cabin: string;
+  availableSeats: number;
+  baggage: {
+    checkedBags: number;
+    carryOn: boolean;
+  };
+  cancellationPolicy: string;
+  isRefundable: boolean;
 }
 
 export interface HotelPrice {

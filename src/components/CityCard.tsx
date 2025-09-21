@@ -38,7 +38,7 @@ const CityCard = ({ city, isSelected, onToggle }: CityCardProps) => {
   return (
     <Card
       className={cn(
-        "relative cursor-pointer transition-all duration-300 hover:shadow-2xl border-3",
+        "relative cursor-pointer transition-all duration-300 hover:shadow-2xl border-3 z-10",
         "transform hover:scale-105 hover:-translate-y-2 active:scale-95",
         isSelected
           ? "bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 text-white border-white shadow-2xl ring-4 ring-blue-300"

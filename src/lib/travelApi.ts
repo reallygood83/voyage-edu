@@ -11,6 +11,9 @@ export interface FlightPrice {
   airline: string;
   duration: string;
   stops: number;
+  stopoverCities?: string[];
+  departureTime: string;
+  arrivalTime: string;
 }
 
 export interface HotelPrice {
@@ -80,6 +83,84 @@ export class TravelPriceService {
     const basePrice = getBasePrice(origin, destination);
     const priceMultiplier = getPriceMultiplier(departureDate);
     
+    // 목적지별 정확한 비행시간 데이터
+    const getFlightDuration = (destination: string, stops: number): string => {
+      const directFlightTimes: Record<string, string> = {
+        'Tokyo': '직항 (2시간 20분)',
+        'Beijing': '직항 (2시간 15분)',
+        'Bangkok': '직항 (5시간 50분)',
+        'Paris': '직항 (12시간)',
+        'London': '직항 (11시간 20분)',
+        'New York': '직항 (14시간)',
+        'Sydney': '직항 (10시간)',
+        'Rome': '직항 (12시간 30분)',
+        'Berlin': '직항 (11시간 30분)',
+        'Barcelona': '직항 (12시간 30분)'
+      };
+
+      if (stops === 0) {
+        return directFlightTimes[destination] || '직항 (10-12시간)';
+      } else {
+        // 경유 시 2-4시간 추가
+        const directTime = directFlightTimes[destination];
+        if (directTime) {
+          const hours = parseInt(directTime.match(/(\d+)시간/)?.[1] || '10');
+          return `경유 (${hours + 2}-${hours + 4}시간)`;
+        }
+        return '경유 (12-16시간)';
+      }
+    };
+
+    // 경유지 정보 설정
+    const getStopoverInfo = (destination: string, stops: number): string[] => {
+      if (stops === 0) return [];
+      
+      const stopoverOptions: Record<string, string[]> = {
+        'Tokyo': ['Osaka'],
+        'Beijing': ['Shanghai'],
+        'Bangkok': ['Hong Kong'],
+        'Paris': ['Frankfurt', 'Amsterdam'],
+        'London': ['Frankfurt', 'Amsterdam'],
+        'New York': ['Vancouver', 'Los Angeles'],
+        'Sydney': ['Singapore', 'Hong Kong'],
+        'Rome': ['Frankfurt', 'Vienna'],
+        'Berlin': ['Frankfurt', 'Vienna'],
+        'Barcelona': ['Frankfurt', 'Paris']
+      };
+      
+      return stopoverOptions[destination] ? [stopoverOptions[destination][0]] : ['Hong Kong'];
+    };
+
+    // 출발/도착 시간 생성
+    const generateFlightTimes = (destination: string, stops: number): { departure: string, arrival: string } => {
+      const departureHours = [8, 10, 14, 18, 22]; // 일반적인 출발 시간들
+      const randomDeparture = departureHours[Math.floor(Math.random() * departureHours.length)];
+      
+      // 목적지별 기본 비행시간 (시간)
+      const baseDurations: Record<string, number> = {
+        'Tokyo': 2.3,
+        'Beijing': 2.25,
+        'Bangkok': 5.8,
+        'Paris': 12,
+        'London': 11.3,
+        'New York': 14,
+        'Sydney': 10,
+        'Rome': 12.5,
+        'Berlin': 11.5,
+        'Barcelona': 12.5
+      };
+      
+      const baseDuration = baseDurations[destination] || 10;
+      const totalDuration = stops === 0 ? baseDuration : baseDuration + 3; // 경유 시 3시간 추가
+      
+      const arrivalHour = (randomDeparture + totalDuration) % 24;
+      
+      return {
+        departure: `${randomDeparture.toString().padStart(2, '0')}:${Math.floor(Math.random() * 6) * 10}`,
+        arrival: `${Math.floor(arrivalHour).toString().padStart(2, '0')}:${Math.floor(Math.random() * 6) * 10}`
+      };
+    };
+
     // 항공사별 가격 옵션 생성
     const airlines = [
       { name: '대한항공', multiplier: 1.2, stops: 0 },
@@ -89,17 +170,23 @@ export class TravelPriceService {
       { name: '저비용항공', multiplier: 0.7, stops: 1 }
     ];
 
-    return airlines.map(airline => ({
-      origin,
-      destination,
-      departureDate,
-      returnDate,
-      price: Math.round(basePrice * priceMultiplier * airline.multiplier * passengers),
-      currency: 'KRW',
-      airline: airline.name,
-      duration: airline.stops === 0 ? '직항 (8-14시간)' : '경유 (12-18시간)',
-      stops: airline.stops
-    }));
+    return airlines.map(airline => {
+      const flightTimes = generateFlightTimes(destination, airline.stops);
+      return {
+        origin,
+        destination,
+        departureDate,
+        returnDate,
+        price: Math.round(basePrice * priceMultiplier * airline.multiplier * passengers),
+        currency: 'KRW',
+        airline: airline.name,
+        duration: getFlightDuration(destination, airline.stops),
+        stops: airline.stops,
+        stopoverCities: getStopoverInfo(destination, airline.stops),
+        departureTime: flightTimes.departure,
+        arrivalTime: flightTimes.arrival
+      };
+    });
   }
 
   // 호텔 가격 조회

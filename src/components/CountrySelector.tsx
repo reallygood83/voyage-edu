@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Country, City } from '@/types';
 import { COUNTRIES, MAJOR_CITIES } from '@/utils/constants';
 import CityCard from './CityCard';
@@ -27,16 +27,43 @@ const CountrySelector = ({
 }: CountrySelectorProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // 검색 드롭다운 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element;
+      if (!target.closest('.search-container')) {
+        setShowDropdown(false);
+      }
+    };
+
+    if (showDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDropdown]);
 
   const filteredCountries = COUNTRIES.filter(
     country =>
-      country.nameKo.includes(searchTerm) ||
+      country.nameKo.toLowerCase().includes(searchTerm.toLowerCase()) ||
       country.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // 디버깅 로그
+  console.log('🔍 Search Debug:', {
+    searchTerm,
+    showDropdown,
+    filteredCountriesCount: filteredCountries.length,
+    filteredCountries: filteredCountries.slice(0, 3) // 처음 3개만 로그
+  });
+
   const handleCountrySelect = (country: Country) => {
     onCountrySelect(country);
-    setSearchTerm(country.nameKo);
+    setSearchTerm(''); // 검색창 초기화
     setShowDropdown(false);
     onCitiesSelect([]); // Reset selected cities when country changes
   };
@@ -74,8 +101,9 @@ const CountrySelector = ({
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="relative">
+          <div className="relative search-container" style={{position: 'relative', zIndex: 1}}>
             <Input
+              ref={inputRef}
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -86,26 +114,38 @@ const CountrySelector = ({
               className="text-xl py-6 h-16 border-3 border-blue-300 focus:border-blue-500 bg-white/80"
             />
             
-            {showDropdown && searchTerm && (
-              <Card className="absolute top-full mt-2 w-full border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto z-20 bg-white">
-                <CardContent className="p-0">
-                  {filteredCountries.map((country) => (
-                    <Button
-                      key={country.code}
-                      onClick={() => handleCountrySelect(country)}
-                      variant="ghost"
-                      className="w-full justify-start p-4 h-auto hover:bg-blue-50 transition-all duration-200 hover:scale-[1.02]"
-                    >
-                      <span className="text-3xl mr-3 animate-pulse">{country.flag}</span>
-                      <div className="text-left">
-                        <div className="font-bold text-lg">{country.nameKo}</div>
-                        <div className="text-gray-500 text-sm">({country.name})</div>
-                      </div>
-                    </Button>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
+            {searchTerm.length > 0 && showDropdown && (
+              <Card className="absolute top-full mt-2 w-full border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto z-[9999] bg-white"
+                style={{
+                  position: 'absolute',
+                  zIndex: 9999,
+                  backgroundColor: 'white'
+                }}
+              >
+                 <CardContent className="p-0">
+                   {filteredCountries.length > 0 ? (
+                     filteredCountries.map((country) => (
+                       <Button
+                         key={country.code}
+                         onClick={() => handleCountrySelect(country)}
+                         variant="ghost"
+                         className="w-full justify-start p-4 h-auto hover:bg-blue-50 transition-all duration-200 hover:scale-[1.02]"
+                       >
+                         <span className="text-3xl mr-3 animate-pulse">{country.flag}</span>
+                         <div className="text-left">
+                           <div className="font-bold text-lg">{country.nameKo}</div>
+                           <div className="text-gray-500 text-sm">({country.name})</div>
+                         </div>
+                       </Button>
+                     ))
+                   ) : (
+                     <div className="p-4 text-center text-gray-500">
+                       검색 결과가 없습니다.
+                     </div>
+                   )}
+                 </CardContent>
+               </Card>
+             )}
           </div>
 
           {selectedCountry && (
