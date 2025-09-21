@@ -27,22 +27,10 @@ const CountrySelector = ({
 }: CountrySelectorProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 드롭다운 위치 계산
-  const updateDropdownPosition = () => {
-    if (inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX,
-        width: rect.width
-      });
-    }
-  };
 
-  // 검색 드롭다운 외부 클릭 시 닫기 및 위치 업데이트
+  // 간단한 외부 클릭 처리
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
@@ -51,29 +39,12 @@ const CountrySelector = ({
       }
     };
 
-    const handleResize = () => {
-      if (showDropdown) {
-        updateDropdownPosition();
-      }
-    };
-
-    const handleScroll = () => {
-      if (showDropdown) {
-        updateDropdownPosition();
-      }
-    };
-
     if (showDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
-      window.addEventListener('resize', handleResize);
-      window.addEventListener('scroll', handleScroll);
-      updateDropdownPosition(); // 초기 위치 설정
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      window.removeEventListener('resize', handleResize);
-      window.removeEventListener('scroll', handleScroll);
     };
   }, [showDropdown]);
 
@@ -83,12 +54,19 @@ const CountrySelector = ({
       country.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 디버깅 로그
-  console.log('🔍 Search Debug:', {
+  // 디버깅 로그 - Root Cause Analysis  
+  console.log('🔍 Search Debug - Simplified Version:', {
     searchTerm,
+    searchTermLength: searchTerm.length,
     showDropdown,
     filteredCountriesCount: filteredCountries.length,
-    filteredCountries: filteredCountries.slice(0, 3) // 처음 3개만 로그
+    renderCondition: searchTerm.length > 0 && showDropdown,
+    // 실제 검색 결과 확인
+    filteredCountriesPreview: filteredCountries.slice(0, 3).map(country => ({
+      code: country.code,
+      nameKo: country.nameKo,
+      name: country.name
+    }))
   });
 
   const handleCountrySelect = (country: Country) => {
@@ -145,54 +123,31 @@ const CountrySelector = ({
             />
             
             {searchTerm.length > 0 && showDropdown && (
-              <>
-                {/* 배경 오버레이 */}
-                <div 
-                  className="fixed inset-0 bg-black/20 z-[9998]" 
-                  onClick={() => setShowDropdown(false)}
-                />
-                
-                {/* 검색 결과 드롭다운 - 고정 위치로 렌더링 */}
-                <div
-                  className="fixed z-[10000] bg-white border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto rounded-lg"
-                  style={{
-                    top: `${dropdownPosition.top}px`,
-                    left: `${dropdownPosition.left}px`,
-                    width: `${dropdownPosition.width}px`,
-                    position: 'fixed',
-                    zIndex: 10000,
-                    backgroundColor: 'white',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-                    border: '2px solid rgb(147 197 253)',
-                    borderRadius: '8px',
-                    minWidth: '300px' // 최소 너비 보장
-                  }}
-                >
-                   <div className="p-0">
-                     {filteredCountries.length > 0 ? (
-                       filteredCountries.map((country) => (
-                         <Button
-                           key={country.code}
-                           onClick={() => handleCountrySelect(country)}
-                           variant="ghost"
-                           className="w-full justify-start p-4 h-auto hover:bg-blue-50 transition-all duration-200 hover:scale-[1.02] border-b border-gray-100 last:border-b-0"
-                         >
-                           <span className="text-3xl mr-3 animate-pulse">{country.flag}</span>
-                           <div className="text-left">
-                             <div className="font-bold text-lg">{country.nameKo}</div>
-                             <div className="text-gray-500 text-sm">({country.name})</div>
-                           </div>
-                         </Button>
-                       ))
-                     ) : (
-                       <div className="p-4 text-center text-gray-500">
-                         검색 결과가 없습니다.
-                       </div>
-                     )}
-                   </div>
-                 </div>
-               </>
-             )}
+              <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto rounded-lg">
+                <div className="p-0">
+                  {filteredCountries.length > 0 ? (
+                    filteredCountries.map((country) => (
+                      <Button
+                        key={country.code}
+                        onClick={() => handleCountrySelect(country)}
+                        variant="ghost"
+                        className="w-full justify-start p-4 h-auto hover:bg-blue-50 transition-all duration-200 hover:scale-[1.02] border-b border-gray-100 last:border-b-0"
+                      >
+                        <span className="text-3xl mr-3 animate-pulse">{country.flag}</span>
+                        <div className="text-left">
+                          <div className="font-bold text-lg">{country.nameKo}</div>
+                          <div className="text-gray-500 text-sm">({country.name})</div>
+                        </div>
+                      </Button>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-gray-500">
+                      검색 결과가 없습니다.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {selectedCountry && (
