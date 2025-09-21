@@ -207,7 +207,7 @@ export default function Home() {
         </div>
 
         {/* 업적 및 게임화 시스템 */}
-        <div className="mt-12">
+        <div className="mt-12 relative z-10">
           <AchievementSystem 
             unlockedAchievements={user && userProfile ? userProfile.achievements : unlockedAchievements}
             totalPoints={user && userProfile ? userProfile.points : userPoints}

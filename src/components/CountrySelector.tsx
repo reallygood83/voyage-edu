@@ -101,7 +101,7 @@ const CountrySelector = ({
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="relative search-container" style={{position: 'relative', zIndex: 1}}>
+          <div className="relative search-container">
             <Input
               ref={inputRef}
               value={searchTerm}
@@ -115,36 +115,46 @@ const CountrySelector = ({
             />
             
             {searchTerm.length > 0 && showDropdown && (
-              <Card className="absolute top-full mt-2 w-full border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto z-[9999] bg-white"
-                style={{
-                  position: 'absolute',
-                  zIndex: 9999,
-                  backgroundColor: 'white'
-                }}
-              >
-                 <CardContent className="p-0">
-                   {filteredCountries.length > 0 ? (
-                     filteredCountries.map((country) => (
-                       <Button
-                         key={country.code}
-                         onClick={() => handleCountrySelect(country)}
-                         variant="ghost"
-                         className="w-full justify-start p-4 h-auto hover:bg-blue-50 transition-all duration-200 hover:scale-[1.02]"
-                       >
-                         <span className="text-3xl mr-3 animate-pulse">{country.flag}</span>
-                         <div className="text-left">
-                           <div className="font-bold text-lg">{country.nameKo}</div>
-                           <div className="text-gray-500 text-sm">({country.name})</div>
-                         </div>
-                       </Button>
-                     ))
-                   ) : (
-                     <div className="p-4 text-center text-gray-500">
-                       검색 결과가 없습니다.
-                     </div>
-                   )}
-                 </CardContent>
-               </Card>
+              <>
+                {/* 배경 오버레이 */}
+                <div 
+                  className="fixed inset-0 bg-black/20 z-[9998]" 
+                  onClick={() => setShowDropdown(false)}
+                />
+                
+                {/* 검색 결과 드롭다운 */}
+                <Card className="absolute top-full mt-2 w-full border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto z-[9999] bg-white"
+                  style={{
+                    position: 'absolute',
+                    zIndex: 9999,
+                    backgroundColor: 'white',
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                  }}
+                >
+                   <CardContent className="p-0">
+                     {filteredCountries.length > 0 ? (
+                       filteredCountries.map((country) => (
+                         <Button
+                           key={country.code}
+                           onClick={() => handleCountrySelect(country)}
+                           variant="ghost"
+                           className="w-full justify-start p-4 h-auto hover:bg-blue-50 transition-all duration-200 hover:scale-[1.02] border-b border-gray-100 last:border-b-0"
+                         >
+                           <span className="text-3xl mr-3 animate-pulse">{country.flag}</span>
+                           <div className="text-left">
+                             <div className="font-bold text-lg">{country.nameKo}</div>
+                             <div className="text-gray-500 text-sm">({country.name})</div>
+                           </div>
+                         </Button>
+                       ))
+                     ) : (
+                       <div className="p-4 text-center text-gray-500">
+                         검색 결과가 없습니다.
+                       </div>
+                     )}
+                   </CardContent>
+                 </Card>
+               </>
              )}
           </div>
 
