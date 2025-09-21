@@ -1,21 +1,83 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { TravelPlan, PromotionalMaterial } from '@/types';
 import BrochureDesigner from './BrochureDesigner';
 import PosterGenerator from './PosterGenerator';
+import EducationalMaterialDesigner from '@/components/EducationalMaterialDesigner';
+import { EducationAIEngine, EducationalContent } from '@/lib/educationAI';
+import { EducationTemplateEngine } from '@/lib/educationTemplates';
+import { LearningObjectiveAnalyzer } from '@/lib/educationStandards';
 
 interface PromotionalMaterialsProps {
   travelPlan: TravelPlan;
   onBack: () => void;
+  educationMode?: boolean;
+  targetGrade?: number;
+  targetSubject?: string;
 }
 
-const PromotionalMaterials = ({ travelPlan, onBack }: PromotionalMaterialsProps) => {
-  const [materialType, setMaterialType] = useState<'brochure' | 'poster' | 'social'>('brochure');
+const PromotionalMaterials = ({ 
+  travelPlan, 
+  onBack, 
+  educationMode = false,
+  targetGrade = 5,
+  targetSubject = '사회'
+}: PromotionalMaterialsProps) => {
+  const [materialType, setMaterialType] = useState<'brochure' | 'poster' | 'social' | 'educational'>(
+    educationMode ? 'educational' : 'brochure'
+  );
   const [generatedMaterials, setGeneratedMaterials] = useState<PromotionalMaterial[]>([]);
+  const [educationalContent, setEducationalContent] = useState<EducationalContent | null>(null);
+  const [educationSettings, setEducationSettings] = useState({
+    level: 'elementary' as 'elementary' | 'middle' | 'high',
+    grade: targetGrade,
+    subject: targetSubject,
+    learningStyle: 'visual' as 'visual' | 'auditory' | 'kinesthetic' | 'reading',
+    groupSize: 'small' as 'individual' | 'small' | 'large'
+  });
 
   const handleSaveMaterial = (material: PromotionalMaterial) => {
     setGeneratedMaterials([...generatedMaterials, material]);
+  };
+
+  // 교육용 콘텐츠 생성
+  useEffect(() => {
+    if (educationMode && travelPlan && travelPlan.cities) {
+      generateEducationalContent();
+    }
+  }, [educationMode, travelPlan, educationSettings]);
+
+  const generateEducationalContent = async () => {
+    if (!travelPlan.cities || travelPlan.cities.length === 0) return;
+
+    try {
+      // 추천 템플릿 가져오기
+      const recommendedTemplates = EducationTemplateEngine.recommendTemplate(
+        educationSettings.level,
+        educationSettings.grade,
+        educationSettings.subject,
+        educationSettings.learningStyle,
+        educationSettings.groupSize
+      );
+
+      const template = recommendedTemplates[0]; // 첫 번째 추천 템플릿 사용
+      if (!template) return;
+
+      // 교육용 콘텐츠 생성
+      const content = EducationAIEngine.generateEducationalContent(
+        '세계 문화 탐험',
+        travelPlan.cities,
+        educationSettings.level,
+        educationSettings.grade,
+        educationSettings.subject,
+        template
+      );
+
+      setEducationalContent(content);
+    } catch (error) {
+      console.error('교육용 콘텐츠 생성 실패:', error);
+    }
   };
 
   return (
@@ -23,10 +85,96 @@ const PromotionalMaterials = ({ travelPlan, onBack }: PromotionalMaterialsProps)
       {/* Material Type Selection */}
       <div className="bg-white rounded-2xl shadow-xl p-8">
         <h2 className="text-3xl font-bold mb-6 text-gray-800">
-          📢 홍보 자료 만들기
+          {educationMode ? '📚 교육용 자료 만들기' : '📢 홍보 자료 만들기'}
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {educationMode && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <h3 className="font-semibold text-blue-800 mb-2">🎯 교육 설정</h3>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+              <div>
+                <label className="block text-blue-700 font-medium">학교급</label>
+                <select 
+                  value={educationSettings.level}
+                  onChange={(e) => setEducationSettings(prev => ({...prev, level: e.target.value as any}))}
+                  className="w-full mt-1 border border-blue-300 rounded px-2 py-1"
+                >
+                  <option value="elementary">초등학교</option>
+                  <option value="middle">중학교</option>
+                  <option value="high">고등학교</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-blue-700 font-medium">학년</label>
+                <select 
+                  value={educationSettings.grade}
+                  onChange={(e) => setEducationSettings(prev => ({...prev, grade: parseInt(e.target.value)}))}
+                  className="w-full mt-1 border border-blue-300 rounded px-2 py-1"
+                >
+                  {[1,2,3,4,5,6].map(grade => (
+                    <option key={grade} value={grade}>{grade}학년</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-blue-700 font-medium">교과</label>
+                <select 
+                  value={educationSettings.subject}
+                  onChange={(e) => setEducationSettings(prev => ({...prev, subject: e.target.value}))}
+                  className="w-full mt-1 border border-blue-300 rounded px-2 py-1"
+                >
+                  <option value="사회">사회</option>
+                  <option value="통합교과">통합교과</option>
+                  <option value="도덕">도덕</option>
+                  <option value="국어">국어</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-blue-700 font-medium">학습 스타일</label>
+                <select 
+                  value={educationSettings.learningStyle}
+                  onChange={(e) => setEducationSettings(prev => ({...prev, learningStyle: e.target.value as any}))}
+                  className="w-full mt-1 border border-blue-300 rounded px-2 py-1"
+                >
+                  <option value="visual">시각형</option>
+                  <option value="auditory">청각형</option>
+                  <option value="kinesthetic">체험형</option>
+                  <option value="reading">독서형</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-blue-700 font-medium">그룹 크기</label>
+                <select 
+                  value={educationSettings.groupSize}
+                  onChange={(e) => setEducationSettings(prev => ({...prev, groupSize: e.target.value as any}))}
+                  className="w-full mt-1 border border-blue-300 rounded px-2 py-1"
+                >
+                  <option value="individual">개별</option>
+                  <option value="small">소그룹</option>
+                  <option value="large">대그룹</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        <div className={`grid grid-cols-1 md:grid-cols-${educationMode ? '4' : '3'} gap-4`}>
+          {educationMode && (
+            <button
+              onClick={() => setMaterialType('educational')}
+              className={`p-6 rounded-xl border-2 transition-all ${
+                materialType === 'educational'
+                  ? 'border-blue-500 bg-blue-50'
+                  : 'border-gray-300 hover:border-gray-400'
+              }`}
+            >
+              <div className="text-4xl mb-3">📚</div>
+              <h3 className="font-bold text-lg">교육 자료</h3>
+              <p className="text-sm text-gray-600 mt-1">
+                교육과정 연계 학습 자료
+              </p>
+            </button>
+          )}
           <button
             onClick={() => setMaterialType('brochure')}
             className={`p-6 rounded-xl border-2 transition-all ${
@@ -101,6 +249,15 @@ const PromotionalMaterials = ({ travelPlan, onBack }: PromotionalMaterialsProps)
           </div>
         </div>
       )}
+      
+      {materialType === 'educational' && educationalContent && (
+        <EducationalMaterialDesigner
+          educationalContent={educationalContent}
+          travelPlan={travelPlan}
+          onSave={handleSaveMaterial}
+          educationSettings={educationSettings}
+        />
+      )}
 
       {/* Generated Materials */}
       {generatedMaterials.length > 0 && (
@@ -141,7 +298,7 @@ const PromotionalMaterials = ({ travelPlan, onBack }: PromotionalMaterialsProps)
         <button
           className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg transition-colors"
         >
-          🎉 완료 및 공유하기
+          {educationMode ? '🎓 학습 자료 활용하기' : '🎉 완료 및 공유하기'}
         </button>
       </div>
     </div>
