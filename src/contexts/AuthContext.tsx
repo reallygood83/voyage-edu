@@ -4,6 +4,8 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { 
   User, 
   signInWithPopup, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut as firebaseSignOut, 
   onAuthStateChanged,
   UserCredential
@@ -32,6 +34,8 @@ interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<void>;
+  signUpWithEmail: (email: string, password: string, name: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateUserProfile: (updates: Partial<UserProfile>) => Promise<void>;
   addPoints: (points: number) => Promise<void>;
@@ -117,25 +121,140 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
+      console.log('🔥 Google 로그인 시도 시작');
+      console.log('🔥 Firebase Auth Instance:', auth);
+      console.log('🔥 Google Provider Config:', googleProvider);
+      
       const result: UserCredential = await signInWithPopup(auth, googleProvider);
+      console.log('🔥 Google 로그인 성공:', result.user.email);
       const user = result.user;
       
       // 새 사용자인지 확인
       const isNewUser = result.user.metadata.creationTime === result.user.metadata.lastSignInTime;
+      console.log('🔥 새 사용자 여부:', isNewUser);
       
       await createOrUpdateUserProfile(user, isNewUser);
     } catch (error: any) {
-      console.error('Google 로그인 실패:', error);
+      console.error('🔥 Google 로그인 상세 에러:', {
+        code: error.code,
+        message: error.message,
+        details: error,
+        authInstance: auth,
+        providerConfig: googleProvider
+      });
       
       let errorMessage = "로그인에 실패했어요. 다시 시도해주세요.";
       if (error.code === 'auth/popup-closed-by-user') {
         errorMessage = "로그인 창이 닫혔어요. 다시 시도해주세요.";
       } else if (error.code === 'auth/network-request-failed') {
         errorMessage = "인터넷 연결을 확인해주세요.";
+      } else if (error.code === 'auth/unauthorized-domain') {
+        errorMessage = "승인되지 않은 도메인입니다. Firebase 콘솔에서 도메인을 승인해주세요.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = "Google 로그인이 비활성화되어 있습니다. Firebase 콘솔에서 활성화해주세요.";
       }
       
       toast({
         title: "로그인 실패",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 이메일/비밀번호 로그인
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      setLoading(true);
+      console.log('📧 이메일 로그인 시도:', email);
+      
+      const result: UserCredential = await signInWithEmailAndPassword(auth, email, password);
+      console.log('📧 이메일 로그인 성공:', result.user.email);
+      const user = result.user;
+      
+      await createOrUpdateUserProfile(user, false);
+      
+      toast({
+        title: "🎉 로그인 성공!",
+        description: `${user.email}로 로그인되었습니다.`,
+      });
+    } catch (error: any) {
+      console.error('📧 이메일 로그인 에러:', error);
+      
+      let errorMessage = "로그인에 실패했어요. 다시 시도해주세요.";
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = "등록되지 않은 이메일입니다. 회원가입을 해주세요.";
+      } else if (error.code === 'auth/wrong-password') {
+        errorMessage = "비밀번호가 올바르지 않습니다.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "올바른 이메일 형식을 입력해주세요.";
+      } else if (error.code === 'auth/user-disabled') {
+        errorMessage = "비활성화된 계정입니다. 관리자에게 문의해주세요.";
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = "너무 많은 로그인 시도입니다. 잠시 후 다시 시도해주세요.";
+      }
+      
+      toast({
+        title: "로그인 실패",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 이메일/비밀번호 회원가입
+  const signUpWithEmail = async (email: string, password: string, name: string) => {
+    try {
+      setLoading(true);
+      console.log('📝 이메일 회원가입 시도:', email);
+      
+      const result: UserCredential = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('📝 이메일 회원가입 성공:', result.user.email);
+      const user = result.user;
+      
+      // 새 사용자 프로필 생성 (이름 포함)
+      const userDocRef = doc(db, 'users', user.uid);
+      const newUserProfile: UserProfile = {
+        id: user.uid,
+        name: name || '여행가',
+        email: user.email || '',
+        photoURL: user.photoURL || '',
+        grade: '',
+        school: '',
+        points: 0,
+        achievements: [],
+        travelPlans: [],
+        createdAt: new Date(),
+        lastLoginAt: new Date(),
+      };
+      
+      await setDoc(userDocRef, newUserProfile);
+      setUserProfile(newUserProfile);
+      
+      toast({
+        title: "🎉 회원가입 완료!",
+        description: `${name}님, Voyage Edu에 가입해주셔서 감사합니다!`,
+      });
+    } catch (error: any) {
+      console.error('📝 이메일 회원가입 에러:', error);
+      
+      let errorMessage = "회원가입에 실패했어요. 다시 시도해주세요.";
+      if (error.code === 'auth/email-already-in-use') {
+        errorMessage = "이미 사용 중인 이메일입니다. 로그인을 시도해주세요.";
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = "올바른 이메일 형식을 입력해주세요.";
+      } else if (error.code === 'auth/weak-password') {
+        errorMessage = "비밀번호는 6자 이상이어야 합니다.";
+      } else if (error.code === 'auth/operation-not-allowed') {
+        errorMessage = "이메일 회원가입이 비활성화되어 있습니다.";
+      }
+      
+      toast({
+        title: "회원가입 실패",
         description: errorMessage,
         variant: "destructive"
       });
@@ -246,6 +365,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     userProfile,
     loading,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
     signOut,
     updateUserProfile,
     addPoints,
