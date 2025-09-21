@@ -31,7 +31,8 @@ export const auth = getAuth(app);
 // Google Provider 설정
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({
-  prompt: 'select_account'
+  prompt: 'select_account',
+  hd: '*' // 모든 도메인 허용
 });
 
 // Firestore 인스턴스
