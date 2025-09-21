@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TravelPlan } from '@/lib/travelApi'
+import { TravelPlan } from '@/types'
 import TravelPlanCard from './TravelPlanCard'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,11 +38,11 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
     const samplePlans: CommunityPlan[] = [
       {
         id: '1',
+        title: '서울→부산→제주 가족 여행',
         cities: ['서울', '부산', '제주'],
         startDate: '2024-03-15',
         endDate: '2024-03-20',
         totalBudget: 850000,
-        activities: [],
         author: '여행러버123',
         likes: 45,
         views: 230,
@@ -53,11 +53,11 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
       },
       {
         id: '2', 
+        title: '경주→안동→포항 역사 탐방',
         cities: ['경주', '안동', '포항'],
         startDate: '2024-04-10',
         endDate: '2024-04-12',
         totalBudget: 420000,
-        activities: [],
         author: '역사탐험가',
         likes: 32,
         views: 156,
@@ -68,11 +68,11 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
       },
       {
         id: '3',
+        title: '강릉→속초→양양 바다 힐링',
         cities: ['강릉', '속초', '양양'],
         startDate: '2024-05-01',
         endDate: '2024-05-03',
         totalBudget: 380000,
-        activities: [],
         author: '바다사랑',
         likes: 67,
         views: 298,
@@ -83,11 +83,11 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
       },
       {
         id: '4',
+        title: '전주→군산→익산 전통 체험',
         cities: ['전주', '군산', '익산'],
         startDate: '2024-04-20',
         endDate: '2024-04-22',
         totalBudget: 310000,
-        activities: [],
         author: '한옥마니아',
         likes: 28,
         views: 134,
@@ -98,11 +98,11 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
       },
       {
         id: '5',
+        title: '춘천→가평→양평 당일 드라이브',
         cities: ['춘천', '가평', '양평'],
         startDate: '2024-03-25',
         endDate: '2024-03-26',
         totalBudget: 180000,
-        activities: [],
         author: '춘천닭갈비',
         likes: 19,
         views: 89,
@@ -143,7 +143,7 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
     // 검색 필터
     if (searchTerm) {
       filtered = filtered.filter(plan => 
-        plan.cities.some(city => city.includes(searchTerm)) ||
+        (plan.cities && plan.cities.some(city => city.includes(searchTerm))) ||
         plan.author.includes(searchTerm) ||
         plan.tags.some(tag => tag.includes(searchTerm))
       )
@@ -187,8 +187,8 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
     if (plan) {
       try {
         await navigator.share({
-          title: `${plan.cities.join(' → ')} 여행 계획`,
-          text: `${plan.author}님의 ${plan.cities.join(' → ')} 여행 계획을 확인해보세요!`,
+          title: `${plan.cities?.join(' → ') || plan.title} 여행 계획`,
+          text: `${plan.author}님의 ${plan.cities?.join(' → ') || plan.title} 여행 계획을 확인해보세요!`,
           url: window.location.href
         })
       } catch (error) {

@@ -33,14 +33,14 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [posterData, setPosterData] = useState<PosterData>({
     title: `${selectedCities.map(c => c.nameKo || c.name).join(' & ')} 여행`,
-    subtitle: `${travelPlan.duration}의 특별한 여행`,
+    subtitle: `${travelPlan.duration || '미정 일정'}의 특별한 여행`,
     highlights: [
       `${selectedCities.length}개 도시 탐방`,
-      `총 예산 ${Math.round(travelPlan.budget / 10000)}만원`,
+      `총 예산 ${Math.round((travelPlan.budget || travelPlan.totalBudget || 0) / 10000)}만원`,
       `${travelPlan.travelers || 2}명의 여행자`
     ],
-    duration: travelPlan.duration,
-    budget: `${Math.round(travelPlan.budget / 10000)}만원`,
+    duration: travelPlan.duration || '일정 미정',
+    budget: `${Math.round((travelPlan.budget || travelPlan.totalBudget || 0) / 10000)}만원`,
     theme: 'modern',
     showImages: true,
     showQR: false,

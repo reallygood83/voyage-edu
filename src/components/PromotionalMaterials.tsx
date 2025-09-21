@@ -233,6 +233,15 @@ const PromotionalMaterials = ({
       {materialType === 'poster' && (
         <PosterGenerator
           travelPlan={travelPlan}
+          selectedCities={travelPlan.cities?.map(cityName => ({
+            id: cityName,
+            name: cityName,
+            nameKo: cityName,
+            country: 'Korea',
+            countryCode: 'KR',
+            latitude: 0,
+            longitude: 0
+          })) || []}
           onSave={handleSaveMaterial}
         />
       )}

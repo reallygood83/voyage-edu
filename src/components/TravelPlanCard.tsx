@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Heart, Share2, Eye, MapPin, Calendar, Users, Star } from 'lucide-react'
-import { TravelPlan } from '@/lib/travelApi'
+import { TravelPlan } from '@/types'
 
 interface TravelPlanCardProps {
   plan: TravelPlan & {
@@ -66,7 +66,7 @@ export default function TravelPlanCard({ plan, onLike, onShare, onView }: Travel
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <CardTitle className="text-lg font-bold text-gray-800 mb-2">
-              {plan.cities.join(' → ')} 여행
+              {plan.cities?.join(' → ') || plan.title} 여행
             </CardTitle>
             <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
               <Users className="w-4 h-4" />
@@ -87,7 +87,7 @@ export default function TravelPlanCard({ plan, onLike, onShare, onView }: Travel
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="flex items-center gap-2">
             <MapPin className="w-4 h-4 text-blue-500" />
-            <span>{plan.cities.length}개 도시</span>
+            <span>{plan.cities?.length || 0}개 도시</span>
           </div>
           <div className="flex items-center gap-2">
             <Calendar className="w-4 h-4 text-green-500" />
