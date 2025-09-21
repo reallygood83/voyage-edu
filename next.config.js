@@ -20,7 +20,6 @@ const nextConfig = {
     NEXT_PUBLIC_AMADEUS_API_SECRET: process.env.NEXT_PUBLIC_AMADEUS_API_SECRET,
   },
   // 프로덕션 최적화
-  swcMinify: true,
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? {
       exclude: ['error', 'warn']

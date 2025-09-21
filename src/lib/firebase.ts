@@ -32,6 +32,13 @@ const firebaseConfig = {
   measurementId: validateEnvVar('NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID', process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID)
 };
 
+// API 키 디버깅
+console.log('🔥 Firebase Config API Key Test:', {
+  raw: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  validated: firebaseConfig.apiKey,
+  correct: firebaseConfig.apiKey === 'AIzaSyBiDfiYNUsYao4DJs1l4LaGNhnxA8acVK4'
+});
+
 // Firebase 앱 초기화
 const app = initializeApp(firebaseConfig);
 

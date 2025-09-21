@@ -124,10 +124,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.log('🔥 Google 로그인 시도 시작');
       console.log('🔥 Firebase Auth Instance:', auth);
       console.log('🔥 Google Provider Config:', googleProvider);
-      console.log('🔥 환경변수 확인:', {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID
+      
+      // 환경변수가 제대로 로드되었는지 확인
+      const apiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+      console.log('🔥 API Key 검증:', {
+        exists: !!apiKey,
+        length: apiKey?.length,
+        startsWithAI: apiKey?.startsWith('AI'),
+        firstChars: apiKey?.substring(0, 20)
       });
       
       const result: UserCredential = await signInWithPopup(auth, googleProvider);
