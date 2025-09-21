@@ -27,8 +27,8 @@ const CountrySelector = ({
 }: CountrySelectorProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
-
 
   // 간단한 외부 클릭 처리
   useEffect(() => {
@@ -54,26 +54,42 @@ const CountrySelector = ({
       country.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  // 디버깅 로그 - Root Cause Analysis  
-  console.log('🔍 Search Debug - Simplified Version:', {
-    searchTerm,
-    searchTermLength: searchTerm.length,
-    showDropdown,
-    filteredCountriesCount: filteredCountries.length,
-    renderCondition: searchTerm.length > 0 && showDropdown,
-    // 실제 검색 결과 확인
-    filteredCountriesPreview: filteredCountries.slice(0, 3).map(country => ({
-      code: country.code,
-      nameKo: country.nameKo,
-      name: country.name
-    }))
-  });
-
   const handleCountrySelect = (country: Country) => {
     onCountrySelect(country);
-    setSearchTerm(''); // 검색창 초기화
+    setSearchTerm(country.nameKo); // 선택된 국가명을 검색창에 표시
     setShowDropdown(false);
+    setSelectedIndex(-1);
     onCitiesSelect([]); // Reset selected cities when country changes
+  };
+
+  // 키보드 네비게이션 처리
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showDropdown || filteredCountries.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev < filteredCountries.length - 1 ? prev + 1 : 0
+        );
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        setSelectedIndex(prev => 
+          prev > 0 ? prev - 1 : filteredCountries.length - 1
+        );
+        break;
+      case 'Enter':
+        e.preventDefault();
+        if (selectedIndex >= 0 && selectedIndex < filteredCountries.length) {
+          handleCountrySelect(filteredCountries[selectedIndex]);
+        }
+        break;
+      case 'Escape':
+        setShowDropdown(false);
+        setSelectedIndex(-1);
+        break;
+    }
   };
 
   const handleCityToggle = (city: City) => {
@@ -109,47 +125,82 @@ const CountrySelector = ({
           </p>
         </CardHeader>
         <CardContent className="space-y-6">
+          {/* 검색 영역 */}
           <div className="relative search-container">
-            <Input
-              ref={inputRef}
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setShowDropdown(true);
-              }}
-              onFocus={() => setShowDropdown(true)}
-              placeholder="🔍 국가 이름을 입력하세요 (예: 한국, 일본, 프랑스)"
-              className="text-xl py-6 h-16 border-3 border-blue-300 focus:border-blue-500 bg-white/80"
-            />
-            
-            {searchTerm.length > 0 && showDropdown && (
-              <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto rounded-lg">
-                <div className="p-0">
-                  {filteredCountries.length > 0 ? (
-                    filteredCountries.map((country) => (
-                      <Button
-                        key={country.code}
-                        onClick={() => handleCountrySelect(country)}
-                        variant="ghost"
-                        className="w-full justify-start p-4 h-auto hover:bg-blue-50 transition-all duration-200 hover:scale-[1.02] border-b border-gray-100 last:border-b-0"
-                      >
-                        <span className="text-3xl mr-3 animate-pulse">{country.flag}</span>
-                        <div className="text-left">
-                          <div className="font-bold text-lg">{country.nameKo}</div>
-                          <div className="text-gray-500 text-sm">({country.name})</div>
+            <div className="flex items-center gap-4">
+              <div className="flex-1 relative">
+                <Input
+                  ref={inputRef}
+                  value={searchTerm}
+                  onChange={(e) => {
+                    setSearchTerm(e.target.value);
+                    setShowDropdown(true);
+                    setSelectedIndex(-1);
+                  }}
+                  onFocus={() => setShowDropdown(true)}
+                  onKeyDown={handleKeyDown}
+                  placeholder="🔍 국가 이름을 입력하세요 (예: 한국, 일본, 프랑스)"
+                  className="text-xl py-6 h-16 border-3 border-blue-300 focus:border-blue-500 bg-white/80"
+                  aria-label="국가 검색"
+                  aria-expanded={showDropdown}
+                  aria-autocomplete="list"
+                  role="combobox"
+                />
+                
+                {searchTerm.length > 0 && showDropdown && !selectedCountry && (
+                  <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto rounded-lg" role="listbox">
+                    <div className="p-0">
+                      {filteredCountries.length > 0 ? (
+                        filteredCountries.map((country, index) => (
+                          <Button
+                            key={country.code}
+                            onClick={() => handleCountrySelect(country)}
+                            variant="ghost"
+                            className={`w-full justify-start p-4 h-auto transition-all duration-200 hover:scale-105 border-b border-gray-100 last:border-b-0 ${
+                              index === selectedIndex 
+                                ? 'bg-blue-100 border-blue-300' 
+                                : 'hover:bg-blue-50'
+                            }`}
+                            role="option"
+                            aria-selected={index === selectedIndex}
+                          >
+                            <span className="text-3xl mr-3 animate-pulse">{country.flag}</span>
+                            <div className="text-left">
+                              <div className="font-bold text-lg">{country.nameKo}</div>
+                              <div className="text-gray-500 text-sm">({country.name})</div>
+                            </div>
+                          </Button>
+                        ))
+                      ) : (
+                        <div className="p-4 text-center text-gray-500">
+                          검색 결과가 없습니다.
                         </div>
-                      </Button>
-                    ))
-                  ) : (
-                    <div className="p-4 text-center text-gray-500">
-                      검색 결과가 없습니다.
+                      )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
-            )}
+              
+              {/* 선택 초기화 버튼 */}
+              {selectedCountry && (
+                <Button
+                  onClick={() => {
+                    onCountrySelect(null);
+                    setSearchTerm('');
+                    onCitiesSelect([]);
+                  }}
+                  variant="outline"
+                  size="lg"
+                  className="h-16 px-6 border-3 border-red-300 hover:border-red-500 text-red-600 hover:text-red-700"
+                >
+                  <span className="text-xl mr-2">🔄</span>
+                  다시 선택
+                </Button>
+              )}
+            </div>
           </div>
 
+          {/* 선택된 국가 표시 영역 */}
           {selectedCountry && (
             <Card className="bg-gradient-to-r from-green-100 to-blue-100 border-3 border-green-300 animate-slide-up">
               <CardContent className="p-6">
@@ -163,6 +214,22 @@ const CountrySelector = ({
                     <Badge variant="secondary" className="mt-2 text-base">
                       📍 {selectedCountry.continent}
                     </Badge>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm text-gray-500 mb-2">다른 국가를 선택하려면</p>
+                    <Button
+                      onClick={() => {
+                        setSearchTerm('');
+                        setShowDropdown(true);
+                        inputRef.current?.focus();
+                      }}
+                      variant="outline"
+                      size="sm"
+                      className="border-2 border-blue-300 hover:border-blue-500"
+                    >
+                      <span className="mr-1">🔍</span>
+                      다시 검색
+                    </Button>
                   </div>
                 </div>
               </CardContent>
