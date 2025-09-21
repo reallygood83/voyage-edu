@@ -90,11 +90,36 @@ npm run dev
 `.env.local` 파일을 생성하고 다음 API 키를 추가하세요:
 
 ```env
-NEXT_PUBLIC_OPENWEATHER_API_KEY=your_key_here
-NEXT_PUBLIC_AMADEUS_CLIENT_ID=your_id_here
-NEXT_PUBLIC_AMADEUS_CLIENT_SECRET=your_secret_here
-NEXT_PUBLIC_GEMINI_API_KEY=your_key_here
+# OpenWeatherMap API (날씨 정보 - 필수)
+NEXT_PUBLIC_OPENWEATHER_API_KEY=your_openweather_key
+
+# Firebase Configuration (인증 및 데이터베이스 - 필수)
+NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
+NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+# Future APIs (향후 구현 예정)
+NEXT_PUBLIC_AMADEUS_CLIENT_ID=your_amadeus_id
+NEXT_PUBLIC_AMADEUS_CLIENT_SECRET=your_amadeus_secret
+NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_key
 ```
+
+### 📝 API 키 발급 방법
+
+#### 🌤️ OpenWeatherMap (무료)
+1. https://openweathermap.org 회원가입
+2. My API keys → Create Key
+3. 활성화까지 최대 2시간 소요
+
+#### 🔥 Firebase (무료)
+1. https://console.firebase.google.com 접속
+2. 새 프로젝트 생성
+3. 프로젝트 설정 → 일반 → 웹앱 추가
+4. SDK 설정 및 구성에서 config 객체 복사
 
 ## 📱 사용 방법
 

@@ -9,7 +9,14 @@
     "start": "next start",
     "lint": "next lint"
   },
-  "keywords": ["education", "travel", "culture", "elementary", "nextjs", "react"],
+  "keywords": [
+    "education",
+    "travel",
+    "culture",
+    "elementary",
+    "nextjs",
+    "react"
+  ],
   "author": "reallygood83",
   "license": "MIT",
   "description": "🌍 초등학생을 위한 세계 문화 여행 상품 제작 교육 플랫폼",
@@ -22,6 +29,7 @@
     "autoprefixer": "^10.4.21",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "firebase": "^12.3.0",
     "lucide-react": "^0.544.0",
     "next": "^15.5.3",
     "postcss": "^8.5.6",
