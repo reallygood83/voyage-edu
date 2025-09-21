@@ -33,6 +33,8 @@ export interface ActivityPrice {
   duration: string;
   category: string;
   description: string;
+  location?: string;
+  recommendedTime?: string;
 }
 
 // 실제 API 연동 대신 현실적인 가격 데이터를 생성하는 함수

@@ -10,6 +10,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { City, TravelPlan, StandardizedFlight } from '@/types';
 import { TravelPriceService, FlightPrice, HotelPrice, ActivityPrice } from '@/lib/travelApi';
 import { AmadeusService } from '@/services/amadeusService';
+import { CustomActivityModal } from './CustomActivityModal';
+import { DestinationInfoCard } from './DestinationInfoCard';
+import PosterGenerator from './PosterGenerator';
+import CommunityGallery from './CommunityGallery';
+import CulturalLearningCard from './CulturalLearningCard';
 
 interface EnhancedTravelPlanBuilderProps {
   selectedCities: City[];
@@ -94,6 +99,12 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
   const [selectedHotels, setSelectedHotels] = useState<Record<string, HotelPrice>>({});
   const [selectedActivities, setSelectedActivities] = useState<Record<string, ActivityPrice[]>>({});
   const [noFlightNeeded, setNoFlightNeeded] = useState(false);
+  
+  // 새로운 기능들을 위한 상태
+  const [showCustomActivityModal, setShowCustomActivityModal] = useState(false);
+  const [currentCustomActivityCity, setCurrentCustomActivityCity] = useState<string>('');
+  const [showDestinationInfo, setShowDestinationInfo] = useState<Record<string, boolean>>({});
+  const [showPosterGenerator, setShowPosterGenerator] = useState(false);
 
   const steps = [
     '📅 여행 기본 정보',
@@ -101,7 +112,9 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
     '🏨 숙박 선택',
     '🎯 활동 선택',
     '📋 상세 일정',
-    '💰 예산 확인'
+    '💰 예산 확인',
+    '🎨 포스터 생성',
+    '🌐 커뮤니티 공유'
   ];
 
   // 여행 일수 계산
@@ -266,6 +279,36 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
 
     // 시간순으로 정렬
     return generatedActivities.sort((a, b) => a.time.localeCompare(b.time));
+  };
+
+  // 사용자 정의 활동 추가 함수
+  const handleCustomActivitySave = (activity: any) => {
+    const newActivity: ActivityPrice = {
+      name: activity.name,
+      description: activity.description,
+      price: activity.price,
+      duration: activity.duration,
+      category: activity.category,
+      location: activity.location,
+      recommendedTime: activity.recommendedTime
+    };
+
+    setSelectedActivities(prev => {
+      const cityActivities = prev[currentCustomActivityCity] || [];
+      return {
+        ...prev,
+        [currentCustomActivityCity]: [...cityActivities, newActivity]
+      };
+    });
+
+    // 활동 옵션에도 추가하여 다른 사용자들도 볼 수 있게 함
+    setActivityOptions(prev => {
+      const cityActivities = prev[currentCustomActivityCity] || [];
+      return {
+        ...prev,
+        [currentCustomActivityCity]: [...cityActivities, newActivity]
+      };
+    });
   };
 
   // 상세 일정 생성 (개선된 버전)
@@ -651,33 +694,8 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
         <Button onClick={() => setCurrentStep(currentStep - 1)} variant="outline">
           이전
         </Button>
-        <Button 
-          onClick={() => {
-            const finalPlan: TravelPlan = {
-              id: Date.now().toString(),
-              title: `${selectedCities.map(c => c.name).join(', ')} 여행`,
-              description: `${getTripDays()}일간의 ${selectedCities.map(c => c.name).join(' → ')} 여행`,
-              duration: `${getTripDays()}일`,
-              budget: budgetBreakdown.total,
-              budgetBreakdown,
-              dailySchedules,
-              selectedFlight: selectedFlight || undefined,
-              selectedHotels,
-              selectedActivities,
-              travelers: tripInfo.travelers,
-              startDate: tripInfo.startDate,
-              endDate: tripInfo.endDate,
-              cities: selectedCities.map(c => c.name),
-              accommodationLevel: tripInfo.accommodationLevel,
-              mealLevel: tripInfo.mealLevel,
-              createdAt: new Date().toISOString()
-            };
-            onPlanUpdate(finalPlan);
-            onNext();
-          }}
-          className="bg-green-600 hover:bg-green-700"
-        >
-          여행 계획 완료! 🎉
+        <Button onClick={() => setCurrentStep(6)}>
+          다음: 포스터 생성
         </Button>
       </div>
     </div>
@@ -773,9 +791,44 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
 
       {selectedCities.map(city => (
         <div key={city.name} className="space-y-4">
-          <h4 className="text-lg font-semibold text-gray-800 border-b border-gray-200 pb-2">
-            🌟 {city.name} 활동
-          </h4>
+          <div className="flex justify-between items-center border-b border-gray-200 pb-2">
+            <h4 className="text-lg font-semibold text-gray-800">
+              🌟 {city.name} 활동
+            </h4>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setShowDestinationInfo(prev => ({
+                    ...prev,
+                    [city.name]: !prev[city.name]
+                  }));
+                }}
+                className="text-xs"
+              >
+                📍 여행지 정보
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setCurrentCustomActivityCity(city.name);
+                  setShowCustomActivityModal(true);
+                }}
+                className="text-xs"
+              >
+                ➕ 나만의 활동 추가
+              </Button>
+            </div>
+          </div>
+          
+          {/* 여행지 정보 카드 */}
+          {showDestinationInfo[city.name] && (
+            <div className="mb-4">
+              <DestinationInfoCard city={city} isExpanded={false} />
+            </div>
+          )}
           
           {activityOptions[city.name] ? (
             <div className="grid gap-3">
@@ -965,6 +1018,20 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
         ))}
       </div>
 
+      {/* 문화 학습 섹션 */}
+      <div>
+        <h3 className="text-xl font-bold text-gray-900 mb-4 text-center">
+          🌍 문화 탐험과 비교 학습
+        </h3>
+        <CulturalLearningCard 
+          cities={selectedCities.map(city => city.name)}
+          onQuizComplete={(score, total) => {
+            console.log(`문화 퀴즈 완료: ${score}/${total}`);
+            // 학습 성과 기록 등의 처리 가능
+          }}
+        />
+      </div>
+
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
         <h4 className="font-medium text-blue-800 mb-2">💡 일정 관리 팁</h4>
         <ul className="text-sm text-blue-700 space-y-1">
@@ -986,6 +1053,153 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
     </div>
   );
 
+  // 포스터 생성 단계
+  const renderPosterGeneration = () => {
+    const finalPlan: TravelPlan = {
+      id: Date.now().toString(),
+      title: `${selectedCities.map(c => c.name).join(', ')} 여행`,
+      description: `${getTripDays()}일간의 ${selectedCities.map(c => c.name).join(' → ')} 여행`,
+      duration: `${getTripDays()}일`,
+      budget: budgetBreakdown.total,
+      budgetBreakdown,
+      dailySchedules,
+      selectedFlight: selectedFlight || undefined,
+      selectedHotels,
+      selectedActivities,
+      travelers: tripInfo.travelers,
+      startDate: tripInfo.startDate,
+      endDate: tripInfo.endDate,
+      cities: selectedCities.map(c => c.name),
+      accommodationLevel: tripInfo.accommodationLevel,
+      mealLevel: tripInfo.mealLevel,
+      createdAt: new Date().toISOString()
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">🎨 여행 포스터 생성</h3>
+          <p className="text-gray-600">완성된 여행 계획으로 멋진 포스터를 만들어보세요!</p>
+        </div>
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h4 className="font-medium text-blue-800 mb-2">📋 여행 계획 요약</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <span className="text-blue-600 font-medium">여행지</span>
+              <div>{selectedCities.map(c => c.name).join(', ')}</div>
+            </div>
+            <div>
+              <span className="text-blue-600 font-medium">기간</span>
+              <div>{getTripDays()}일</div>
+            </div>
+            <div>
+              <span className="text-blue-600 font-medium">예산</span>
+              <div>{budgetBreakdown.total.toLocaleString()}원</div>
+            </div>
+            <div>
+              <span className="text-blue-600 font-medium">여행자</span>
+              <div>{tripInfo.travelers}명</div>
+            </div>
+          </div>
+        </div>
+
+        <PosterGenerator 
+          travelPlan={finalPlan} 
+          selectedCities={selectedCities}
+          onSave={(material) => {
+            console.log('포스터가 생성되었습니다:', material);
+            // 필요시 포스터 데이터를 저장하는 로직 추가
+          }}
+        />
+
+        <div className="flex justify-between">
+          <Button onClick={() => setCurrentStep(5)} variant="outline">
+            이전
+          </Button>
+          <Button 
+            onClick={() => {
+              onPlanUpdate(finalPlan);
+              onNext();
+            }}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            여행 계획 완료! 🎉
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
+  // 커뮤니티 갤러리 렌더링
+  const renderCommunityGallery = () => {
+    const finalPlan: TravelPlan = {
+      id: Date.now().toString(),
+      title: `${selectedCities.map(c => c.name).join(', ')} 여행`,
+      description: `${getTripDays()}일간의 ${selectedCities.map(c => c.name).join(' → ')} 여행`,
+      duration: `${getTripDays()}일`,
+      budget: budgetBreakdown.total,
+      budgetBreakdown,
+      dailySchedules,
+      selectedFlight: selectedFlight || undefined,
+      selectedHotels,
+      selectedActivities,
+      travelers: tripInfo.travelers,
+      startDate: tripInfo.startDate,
+      endDate: tripInfo.endDate,
+      cities: selectedCities.map(c => c.name),
+      accommodationLevel: tripInfo.accommodationLevel,
+      mealLevel: tripInfo.mealLevel,
+      createdAt: new Date().toISOString()
+    };
+
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h3 className="text-xl font-bold text-gray-900 mb-2">🌐 커뮤니티에서 영감받기</h3>
+          <p className="text-gray-600">다른 여행자들의 계획을 둘러보고 나만의 여행을 공유해보세요!</p>
+        </div>
+
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h4 className="font-medium text-blue-800 mb-2">🎯 교육적 가치</h4>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p>• 다양한 여행 스타일과 문화적 관점 학습</p>
+            <p>• 예산 관리와 계획 수립 능력 향상</p>
+            <p>• 지역별 특색과 역사적 배경 이해</p>
+            <p>• 협업과 소통을 통한 사회성 발달</p>
+          </div>
+        </div>
+
+        <CommunityGallery 
+          userPlan={finalPlan}
+          onPlanSelect={(plan) => {
+            console.log('선택된 계획:', plan);
+            // 선택된 계획을 상세 보기로 처리
+          }}
+        />
+
+        <div className="flex justify-between pt-6 border-t">
+          <Button 
+            variant="outline" 
+            onClick={() => setCurrentStep(currentStep - 1)}
+          >
+            이전 단계
+          </Button>
+          
+          <Button 
+            onClick={() => {
+              console.log('커뮤니티 활동 완료!');
+              // 최종 완료 처리
+            }}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            여행 계획 완료! 🎉
+          </Button>
+        </div>
+      </div>
+    );
+  };
+
   // 단계별 렌더링
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -995,6 +1209,8 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
       case 3: return renderActivitySelection();
       case 4: return renderDetailedSchedule();
       case 5: return renderBudgetSummary();
+      case 6: return renderPosterGeneration();
+      case 7: return renderCommunityGallery();
       default: return renderBasicInfo();
     }
   };
@@ -1039,6 +1255,14 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
           {renderCurrentStep()}
         </CardContent>
       </Card>
+      
+      {/* 사용자 정의 활동 추가 모달 */}
+      <CustomActivityModal
+        isOpen={showCustomActivityModal}
+        onClose={() => setShowCustomActivityModal(false)}
+        onSave={handleCustomActivitySave}
+        cityName={currentCustomActivityCity}
+      />
     </div>
   );
 };
