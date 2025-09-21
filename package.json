@@ -2,16 +2,17 @@
   "name": "voyage_edu",
   "version": "1.0.0",
   "main": "index.js",
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "description": "",
+  "keywords": ["education", "travel", "culture", "elementary", "nextjs", "react"],
+  "author": "reallygood83",
+  "license": "MIT",
+  "description": "🌍 초등학생을 위한 세계 문화 여행 상품 제작 교육 플랫폼",
   "dependencies": {
     "@radix-ui/react-progress": "^1.1.7",
     "@radix-ui/react-slot": "^1.2.3",
