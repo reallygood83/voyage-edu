@@ -113,16 +113,93 @@ export interface Attraction {
 export interface TravelPlan {
   id: string;
   title: string;
+  description?: string;
+  duration?: string;
   startDate: string;
   endDate: string;
-  destinations: Destination[];
-  targetCustomer: TargetCustomer;
-  totalBudget: number;
-  currency: string;
-  createdBy: string;
+  destinations?: Destination[];
+  targetCustomer?: TargetCustomer;
+  totalBudget?: number;
+  budget?: number;
+  currency?: string;
+  createdBy?: string;
   createdAt: string;
-  updatedAt: string;
-  status: 'draft' | 'published' | 'archived';
+  updatedAt?: string;
+  status?: 'draft' | 'published' | 'archived';
+  
+  // Enhanced travel plan fields
+  budgetBreakdown?: BudgetBreakdown;
+  dailySchedules?: DailySchedule[];
+  selectedFlight?: FlightPrice;
+  selectedHotels?: Record<string, HotelPrice>;
+  selectedActivities?: Record<string, ActivityPrice[]>;
+  travelers?: number;
+  cities?: string[];
+  accommodationLevel?: 'budget' | 'standard' | 'premium';
+  mealLevel?: 'budget' | 'standard' | 'premium';
+}
+
+// Enhanced travel API types
+export interface FlightPrice {
+  origin: string;
+  destination: string;
+  departureDate: string;
+  returnDate: string;
+  price: number;
+  currency: string;
+  airline: string;
+  duration: string;
+  stops: number;
+}
+
+export interface HotelPrice {
+  city: string;
+  name: string;
+  rating: number;
+  pricePerNight: number;
+  currency: string;
+  location: string;
+  amenities: string[];
+  imageUrl?: string;
+}
+
+export interface ActivityPrice {
+  name: string;
+  price: number;
+  duration: string;
+  category: string;
+  description: string;
+}
+
+export interface DailySchedule {
+  day: number;
+  date: string;
+  city: string;
+  activities: {
+    time: string;
+    activity: string;
+    duration: string;
+    cost?: number;
+    location?: string;
+  }[];
+  meals: {
+    breakfast: string;
+    lunch: string;
+    dinner: string;
+  };
+  accommodation: string;
+  dailyBudget: number;
+  notes: string;
+}
+
+export interface BudgetBreakdown {
+  flights: number;
+  accommodation: number;
+  food: number;
+  transport: number;
+  activities: number;
+  miscellaneous: number;
+  total: number;
 }
 
 export interface Destination {

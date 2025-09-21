@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Hero from '@/components/Hero';
 import CountrySelector from '@/components/CountrySelector';
-import TravelPlanBuilder from '@/components/TravelPlanBuilder';
+import EnhancedTravelPlanBuilder from '@/components/EnhancedTravelPlanBuilder';
 import PromotionalMaterials from '@/components/PromotionalMaterials';
 import { Country, City, TravelPlan } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -189,7 +189,7 @@ export default function Home() {
           )}
           
           {activeTab === 'plan' && (
-            <TravelPlanBuilder
+            <EnhancedTravelPlanBuilder
               selectedCities={selectedCities}
               travelPlan={travelPlan}
               onPlanUpdate={setTravelPlan}
