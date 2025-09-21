@@ -263,11 +263,11 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-auto">
-        <div className="flex">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
+      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl transform transition-all duration-300 ease-in-out">
+        <div className="flex h-full">
           {/* 설정 패널 */}
-          <div className="w-1/2 p-6 border-r">
+          <div className="w-1/2 p-6 border-r overflow-y-auto" style={{ maxHeight: 'calc(90vh - 2rem)' }}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">🎨 여행 포스터 생성</h2>
               {onClose && (
@@ -420,14 +420,14 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
           </div>
 
           {/* 미리보기 패널 */}
-          <div className="w-1/2 p-6">
+          <div className="w-1/2 p-6 flex flex-col" style={{ maxHeight: 'calc(90vh - 2rem)' }}>
             <h3 className="text-lg font-semibold mb-4">📋 미리보기</h3>
             
-            <div className="relative">
+            <div className="relative flex-1 overflow-hidden">
               <canvas
                 ref={canvasRef}
-                className="border border-gray-200 rounded-lg shadow-sm max-w-full h-auto"
-                style={{ maxHeight: '600px' }}
+                className="border border-gray-200 rounded-lg shadow-sm w-full h-auto object-contain"
+                style={{ maxHeight: '600px', maxWidth: '100%' }}
               />
               
               {!generatedImage && !isGenerating && (

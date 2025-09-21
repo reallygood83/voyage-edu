@@ -27,9 +27,22 @@ const CountrySelector = ({
 }: CountrySelectorProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // 검색 드롭다운 외부 클릭 시 닫기
+  // 드롭다운 위치 계산
+  const updateDropdownPosition = () => {
+    if (inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + window.scrollY + 8,
+        left: rect.left + window.scrollX,
+        width: rect.width
+      });
+    }
+  };
+
+  // 검색 드롭다운 외부 클릭 시 닫기 및 위치 업데이트
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
@@ -38,12 +51,29 @@ const CountrySelector = ({
       }
     };
 
+    const handleResize = () => {
+      if (showDropdown) {
+        updateDropdownPosition();
+      }
+    };
+
+    const handleScroll = () => {
+      if (showDropdown) {
+        updateDropdownPosition();
+      }
+    };
+
     if (showDropdown) {
       document.addEventListener('mousedown', handleClickOutside);
+      window.addEventListener('resize', handleResize);
+      window.addEventListener('scroll', handleScroll);
+      updateDropdownPosition(); // 초기 위치 설정
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleResize);
+      window.removeEventListener('scroll', handleScroll);
     };
   }, [showDropdown]);
 
@@ -122,16 +152,23 @@ const CountrySelector = ({
                   onClick={() => setShowDropdown(false)}
                 />
                 
-                {/* 검색 결과 드롭다운 */}
-                <Card className="absolute top-full mt-2 w-full border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto z-[9999] bg-white"
+                {/* 검색 결과 드롭다운 - 고정 위치로 렌더링 */}
+                <div
+                  className="fixed z-[10000] bg-white border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto rounded-lg"
                   style={{
-                    position: 'absolute',
-                    zIndex: 9999,
+                    top: `${dropdownPosition.top}px`,
+                    left: `${dropdownPosition.left}px`,
+                    width: `${dropdownPosition.width}px`,
+                    position: 'fixed',
+                    zIndex: 10000,
                     backgroundColor: 'white',
-                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
+                    boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                    border: '2px solid rgb(147 197 253)',
+                    borderRadius: '8px',
+                    minWidth: '300px' // 최소 너비 보장
                   }}
                 >
-                   <CardContent className="p-0">
+                   <div className="p-0">
                      {filteredCountries.length > 0 ? (
                        filteredCountries.map((country) => (
                          <Button
@@ -152,8 +189,8 @@ const CountrySelector = ({
                          검색 결과가 없습니다.
                        </div>
                      )}
-                   </CardContent>
-                 </Card>
+                   </div>
+                 </div>
                </>
              )}
           </div>

@@ -8,6 +8,7 @@ import EducationalMaterialDesigner from '@/components/EducationalMaterialDesigne
 import { EducationAIEngine, EducationalContent } from '@/lib/educationAI';
 import { EducationTemplateEngine } from '@/lib/educationTemplates';
 import { LearningObjectiveAnalyzer } from '@/lib/educationStandards';
+import Link from 'next/link';
 
 interface PromotionalMaterialsProps {
   travelPlan: TravelPlan;
@@ -177,32 +178,38 @@ const PromotionalMaterials = ({
           )}
           <button
             onClick={() => setMaterialType('brochure')}
-            className={`p-6 rounded-xl border-2 transition-all ${
+            className={`p-6 rounded-xl border-2 transition-all transform hover:scale-105 ${
               materialType === 'brochure'
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'border-blue-500 bg-blue-50 shadow-lg'
+                : 'border-gray-300 hover:border-blue-400 hover:shadow-md'
             }`}
           >
             <div className="text-4xl mb-3">📄</div>
-            <h3 className="font-bold text-lg">브로슈어</h3>
+            <h3 className="font-bold text-lg">📖 브로슈어</h3>
             <p className="text-sm text-gray-600 mt-1">
               상세한 여행 정보를 담은 안내 책자
             </p>
+            <div className="text-xs text-blue-600 mt-2 font-medium">
+              • 일정표 • 지도 • 상세 가이드
+            </div>
           </button>
           
           <button
             onClick={() => setMaterialType('poster')}
-            className={`p-6 rounded-xl border-2 transition-all ${
+            className={`p-6 rounded-xl border-2 transition-all transform hover:scale-105 ${
               materialType === 'poster'
-                ? 'border-primary-500 bg-primary-50'
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'border-purple-500 bg-purple-50 shadow-lg'
+                : 'border-gray-300 hover:border-purple-400 hover:shadow-md'
             }`}
           >
             <div className="text-4xl mb-3">🖼️</div>
-            <h3 className="font-bold text-lg">포스터</h3>
+            <h3 className="font-bold text-lg">🎨 포스터</h3>
             <p className="text-sm text-gray-600 mt-1">
               시선을 사로잡는 홍보 포스터
             </p>
+            <div className="text-xs text-purple-600 mt-2 font-medium">
+              • 시각적 임팩트 • 간결한 정보 • SNS 활용
+            </div>
           </button>
           
           <button
@@ -297,18 +304,27 @@ const PromotionalMaterials = ({
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-between">
+      <div className="flex justify-between items-center">
         <button
           onClick={onBack}
           className="btn-secondary px-8 py-3"
         >
           ← 이전 단계
         </button>
-        <button
-          className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg transition-colors"
-        >
-          {educationMode ? '🎓 학습 자료 활용하기' : '🎉 완료 및 공유하기'}
-        </button>
+        
+        <div className="flex gap-4">
+          <Link href="/community">
+            <button className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-8 rounded-lg transition-colors">
+              🌍 커뮤니티에서 보기
+            </button>
+          </Link>
+          
+          <button
+            className="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-8 rounded-lg transition-colors"
+          >
+            {educationMode ? '🎓 학습 자료 활용하기' : '🎉 완료 및 공유하기'}
+          </button>
+        </div>
       </div>
     </div>
   );

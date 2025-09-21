@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { ProfileModal } from './ProfileModal';
+import Link from 'next/link';
 
 export const UserMenu: React.FC = () => {
   const { userProfile, signOut } = useAuth();
@@ -116,6 +117,15 @@ export const UserMenu: React.FC = () => {
                 내 여행 계획
               </div>
             </DropdownMenuItem>
+
+            <Link href="/community">
+              <DropdownMenuItem className="cursor-pointer">
+                <div className="flex items-center">
+                  <span className="mr-2">🌍</span>
+                  커뮤니티 갤러리
+                </div>
+              </DropdownMenuItem>
+            </Link>
 
             <DropdownMenuItem className="cursor-pointer">
               <div className="flex items-center">

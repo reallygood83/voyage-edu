@@ -6,6 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginModal } from '@/components/auth/LoginModal';
+import Link from 'next/link';
 
 const Hero = () => {
   const { user } = useAuth();
@@ -79,6 +80,17 @@ const Hero = () => {
                 지금 시작하기!
               </Button>
               
+              <Link href="/community">
+                <Button 
+                  size="lg" 
+                  variant="outline"
+                  className="text-lg px-8 py-4 bg-white/20 hover:bg-white/30 border-2 border-white text-white backdrop-blur-md"
+                >
+                  <span className="text-xl mr-2">🌍</span>
+                  커뮤니티 둘러보기
+                </Button>
+              </Link>
+              
               {!user && (
                 <Button 
                   size="lg" 
@@ -92,11 +104,16 @@ const Hero = () => {
               )}
             </div>
             
-            {!user && (
-              <p className="text-sm text-white/80">
-                💾 로그인하면 여행 계획을 저장하고 업적을 모을 수 있어요!
+            <div className="text-center space-y-2">
+              {!user && (
+                <p className="text-sm text-white/80">
+                  💾 로그인하면 여행 계획을 저장하고 업적을 모을 수 있어요!
+                </p>
+              )}
+              <p className="text-sm text-white/90">
+                🌟 다른 여행자들의 멋진 여행 계획도 확인해보세요!
               </p>
-            )}
+            </div>
           </div>
 
           {/* 기능 카드들 */}
