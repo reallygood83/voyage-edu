@@ -563,7 +563,7 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
               budget: budgetBreakdown.total,
               budgetBreakdown,
               dailySchedules,
-              selectedFlight,
+              selectedFlight: selectedFlight || undefined,
               selectedHotels,
               selectedActivities,
               travelers: tripInfo.travelers,

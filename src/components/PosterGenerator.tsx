@@ -145,16 +145,16 @@ const PosterGenerator = ({ travelPlan, onSave }: PosterGeneratorProps) => {
             
             <div className="space-y-3">
               <div className="flex flex-wrap gap-2">
-                {travelPlan.destinations.map(dest => (
+                {travelPlan.destinations?.map(dest => (
                   <span key={dest.city.id} className="bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full text-sm">
                     {dest.city.nameKo}
                   </span>
-                ))}
+                )) || <span className="text-white/70 text-sm">도시 정보가 없습니다</span>}
               </div>
               
               <div className="text-sm opacity-80">
                 <p>{travelPlan.startDate} ~ {travelPlan.endDate}</p>
-                <p className="font-bold text-xl mt-1">₩{travelPlan.totalBudget.toLocaleString()}</p>
+                <p className="font-bold text-xl mt-1">₩{travelPlan.totalBudget?.toLocaleString() || '미정'}</p>
               </div>
             </div>
           </div>

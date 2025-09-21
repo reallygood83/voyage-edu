@@ -253,6 +253,7 @@ export class TravelPriceService {
       food: 0,
       transport: 0,
       activities: 0,
+      miscellaneous: 0,
       total: 0
     };
 
@@ -288,7 +289,10 @@ export class TravelPriceService {
       }
     }
 
-    totalBudget.total = Object.values(totalBudget).reduce((sum, cost) => sum + cost, 0) - totalBudget.total;
+    // 기타비용 (전체 비용의 10% 정도로 추정)
+    const subtotal = totalBudget.flights + totalBudget.accommodation + totalBudget.food + totalBudget.transport + totalBudget.activities;
+    totalBudget.miscellaneous = Math.round(subtotal * 0.1);
+    totalBudget.total = subtotal + totalBudget.miscellaneous;
 
     return totalBudget;
   }

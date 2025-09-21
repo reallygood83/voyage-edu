@@ -109,19 +109,19 @@ const BrochureDesigner = ({ travelPlan, onSave }: BrochureDesignerProps) => {
           <div className="bg-white/80 rounded-lg p-4 space-y-2">
             <p className="font-semibold">📍 방문 도시:</p>
             <div className="flex flex-wrap gap-2">
-              {travelPlan.destinations.map(dest => (
+              {travelPlan.destinations?.map(dest => (
                 <span key={dest.city.id} className="bg-primary-100 px-3 py-1 rounded-full text-sm">
                   {dest.city.nameKo}
                 </span>
-              ))}
+              )) || <span className="text-gray-500 text-sm">도시 정보가 없습니다</span>}
             </div>
           </div>
           
           <div className="mt-4 bg-white/80 rounded-lg p-4">
             <p className="font-semibold">👥 타겟 고객:</p>
-            <p className="text-sm mt-1">{travelPlan.targetCustomer.type}</p>
+            <p className="text-sm mt-1">{travelPlan.targetCustomer?.type || '일반 여행객'}</p>
             <p className="font-semibold mt-2">💰 예상 비용:</p>
-            <p className="text-sm mt-1">₩{travelPlan.totalBudget.toLocaleString()}</p>
+            <p className="text-sm mt-1">₩{travelPlan.totalBudget?.toLocaleString() || '미정'}</p>
           </div>
         </div>
       </div>
