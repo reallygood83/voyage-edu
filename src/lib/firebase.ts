@@ -5,7 +5,17 @@ import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork, 
 // 환경변수 검증 함수
 const validateEnvVar = (name: string, value: string | undefined): string => {
   if (!value || value.trim() === '') {
-    throw new Error(`Missing required environment variable: ${name}`);
+    const errorMsg = `Missing required environment variable: ${name}`;
+    console.error('🔥 Firebase Config Error:', errorMsg);
+    
+    // 프로덕션 환경에서는 더 자세한 오류 정보 제공
+    if (process.env.NODE_ENV === 'production') {
+      console.error('🔥 Production Environment Variables Check:');
+      console.error('- Make sure all Firebase environment variables are set in Vercel dashboard');
+      console.error('- Check: https://vercel.com/dashboard → Project → Settings → Environment Variables');
+    }
+    
+    throw new Error(errorMsg);
   }
   // 개행문자나 공백 제거
   return value.trim();
@@ -63,8 +73,8 @@ const validateFirebaseConfig = () => {
   return true;
 };
 
-// 환경변수 디버깅 (개발 환경에서만)
-if (process.env.NODE_ENV === 'development') {
+// 환경변수 디버깅 (개발 환경에서는 상세히, 프로덕션에서는 기본 정보만)
+if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production') {
   console.log('🔥 Firebase Config Debug:', {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? `Set (${process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 10)}...)` : 'Not Set',
     authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
