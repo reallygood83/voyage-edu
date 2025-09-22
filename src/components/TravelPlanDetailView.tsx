@@ -460,7 +460,7 @@ export default function TravelPlanDetailView({
                 <Plane className="w-8 h-8 text-blue-600 mx-auto mb-2" />
                 <p className="text-sm text-blue-600">항공료</p>
                 <p className="text-lg font-semibold">
-                  {formatPrice(plan.budgetBreakdown.flight)}
+                  {formatPrice(plan.budgetBreakdown.flights)}
                 </p>
               </div>
               <div className="text-center p-4 bg-purple-50 rounded-lg border border-purple-200">
