@@ -474,7 +474,7 @@ export default function TravelPlanDetailView({
                 <UtensilsCrossed className="w-8 h-8 text-orange-600 mx-auto mb-2" />
                 <p className="text-sm text-orange-600">식사비</p>
                 <p className="text-lg font-semibold">
-                  {formatPrice(plan.budgetBreakdown.meals)}
+                  {formatPrice(plan.budgetBreakdown.food)}
                 </p>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg border border-green-200">
