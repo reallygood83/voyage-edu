@@ -112,6 +112,15 @@ export const ACHIEVEMENTS: Achievement[] = [
     requirement: '홍보 자료 제작'
   },
   {
+    id: 'culture_learner',
+    title: '문화 탐구자',
+    description: '세계 문화 학습을 시작했어요!',
+    icon: '📚',
+    points: 15,
+    unlocked: false,
+    requirement: '문화 학습 페이지 방문'
+  },
+  {
     id: 'travel_expert',
     title: '여행 전문가',
     description: '모든 단계를 완료했어요!',

@@ -5,6 +5,7 @@ import Hero from '@/components/Hero';
 import CountrySelector from '@/components/CountrySelector';
 import EnhancedTravelPlanBuilder from '@/components/EnhancedTravelPlanBuilder';
 import PromotionalMaterials from '@/components/PromotionalMaterials';
+import CulturalLearning from '@/components/CulturalLearning';
 import { Country, City, TravelPlan } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,7 +22,7 @@ export default function Home() {
   const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
   const [selectedCities, setSelectedCities] = useState<City[]>([]);
   const [travelPlan, setTravelPlan] = useState<TravelPlan | null>(null);
-  const [activeTab, setActiveTab] = useState<'search' | 'plan' | 'promote'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'plan' | 'promote' | 'learn'>('search');
   const [showHelp, setShowHelp] = useState(false);
   const [userPoints, setUserPoints] = useState(0);
   const [unlockedAchievements, setUnlockedAchievements] = useState<string[]>([]);
@@ -31,10 +32,11 @@ export default function Home() {
     if (activeTab === 'search') return 1;
     if (activeTab === 'plan') return 2;
     if (activeTab === 'promote') return 3;
+    if (activeTab === 'learn') return 4;
     return 1;
   };
 
-  const stepNames = ['🌍 국가/도시 검색', '✈️ 여행 계획', '📢 홍보 자료'];
+  const stepNames = ['🌍 국가/도시 검색', '✈️ 여행 계획', '📢 홍보 자료', '📚 문화 학습'];
 
   // 인증된 사용자의 업적 체크 및 포인트 지급
   const checkAchievements = async () => {
@@ -68,6 +70,11 @@ export default function Home() {
         newPoints += 50;
       }
       
+      if (activeTab === 'learn' && !newUnlocked.includes('culture_learner')) {
+        newUnlocked.push('culture_learner');
+        newPoints += 15;
+      }
+      
       setUnlockedAchievements(newUnlocked);
       setUserPoints(newPoints);
       return;
@@ -97,6 +104,11 @@ export default function Home() {
     if (activeTab === 'promote' && travelPlan && !userProfile.achievements.includes('travel_expert')) {
       await addAchievement('travel_expert');
       await addPoints(50);
+    }
+    
+    if (activeTab === 'learn' && !userProfile.achievements.includes('culture_learner')) {
+      await addAchievement('culture_learner');
+      await addPoints(15);
     }
   };
 
@@ -137,7 +149,7 @@ export default function Home() {
         <div className="mb-12">
           <ProgressTracker 
             currentStep={getCurrentStep()}
-            totalSteps={3}
+            totalSteps={4}
             stepNames={stepNames}
           />
         </div>
@@ -145,12 +157,12 @@ export default function Home() {
         {/* Tab Navigation - 개선된 디자인 */}
         <div className="flex justify-center mb-8">
           <Card className="p-2 bg-white/80 backdrop-blur-sm border-2">
-            <div className="flex gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <Button
                 onClick={() => setActiveTab('search')}
                 variant={activeTab === 'search' ? 'default' : 'ghost'}
                 size="lg"
-                className="text-lg px-8 py-4"
+                className="text-lg px-6 py-4"
               >
                 🌍 국가/도시 검색
               </Button>
@@ -158,7 +170,7 @@ export default function Home() {
                 onClick={() => setActiveTab('plan')}
                 variant={activeTab === 'plan' ? 'default' : 'ghost'}
                 size="lg"
-                className="text-lg px-8 py-4"
+                className="text-lg px-6 py-4"
                 disabled={selectedCities.length === 0}
               >
                 ✈️ 여행 계획
@@ -167,10 +179,18 @@ export default function Home() {
                 onClick={() => setActiveTab('promote')}
                 variant={activeTab === 'promote' ? 'default' : 'ghost'}
                 size="lg"
-                className="text-lg px-8 py-4"
+                className="text-lg px-6 py-4"
                 disabled={!travelPlan}
               >
                 📢 홍보 자료
+              </Button>
+              <Button
+                onClick={() => setActiveTab('learn')}
+                variant={activeTab === 'learn' ? 'default' : 'ghost'}
+                size="lg"
+                className="text-lg px-6 py-4"
+              >
+                📚 문화 학습
               </Button>
             </div>
           </Card>
@@ -204,6 +224,12 @@ export default function Home() {
               onBack={() => setActiveTab('plan')}
             />
           )}
+          
+          {activeTab === 'learn' && (
+            <CulturalLearning
+              onBack={() => setActiveTab('search')}
+            />
+          )}
         </div>
 
         {/* 업적 및 게임화 시스템 */}
@@ -234,6 +260,7 @@ export default function Home() {
               <p>• 첫 번째 단계: 가고 싶은 나라와 도시를 선택해주세요</p>
               <p>• 두 번째 단계: 여행 일정과 예산을 계획해보세요</p>
               <p>• 세 번째 단계: 멋진 홍보 자료를 만들어보세요</p>
+              <p>• 네 번째 단계: 세계 문화를 깊이 있게 학습해보세요</p>
               <p className="font-semibold text-yellow-700">🏆 업적을 완료하면 포인트를 얻을 수 있어요!</p>
             </div>
             <Button 

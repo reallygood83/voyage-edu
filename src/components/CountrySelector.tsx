@@ -26,27 +26,16 @@ const CountrySelector = ({
   onNext,
 }: CountrySelectorProps) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [showDropdown, setShowDropdown] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const modalSearchRef = useRef<HTMLInputElement>(null);
 
-  // 간단한 외부 클릭 처리
+  // 모달이 열릴 때 검색창에 포커스
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Element;
-      if (!target.closest('.search-container')) {
-        setShowDropdown(false);
-      }
-    };
-
-    if (showDropdown) {
-      document.addEventListener('mousedown', handleClickOutside);
+    if (showModal && modalSearchRef.current) {
+      modalSearchRef.current.focus();
     }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [showDropdown]);
+  }, [showModal]);
 
   const filteredCountries = COUNTRIES.filter(
     country =>
@@ -56,15 +45,15 @@ const CountrySelector = ({
 
   const handleCountrySelect = (country: Country) => {
     onCountrySelect(country);
-    setSearchTerm(country.nameKo); // 선택된 국가명을 검색창에 표시
-    setShowDropdown(false);
+    setSearchTerm(''); // 모달 닫은 후 검색어 초기화
+    setShowModal(false); // 모달 자동 닫기
     setSelectedIndex(-1);
     onCitiesSelect([]); // Reset selected cities when country changes
   };
 
-  // 키보드 네비게이션 처리
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showDropdown || filteredCountries.length === 0) return;
+  // 모달용 키보드 네비게이션 처리
+  const handleModalKeyDown = (e: React.KeyboardEvent) => {
+    if (filteredCountries.length === 0) return;
 
     switch (e.key) {
       case 'ArrowDown':
@@ -86,8 +75,9 @@ const CountrySelector = ({
         }
         break;
       case 'Escape':
-        setShowDropdown(false);
+        setShowModal(false);
         setSelectedIndex(-1);
+        setSearchTerm('');
         break;
     }
   };
@@ -128,78 +118,28 @@ const CountrySelector = ({
           {/* 검색 영역 */}
           <div className="relative search-container">
             <div className="flex items-center gap-4">
-              <div className="flex-1 relative">
-                <Input
-                  ref={inputRef}
-                  value={searchTerm}
-                  onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setShowDropdown(true);
-                    setSelectedIndex(-1);
-                  }}
-                  onFocus={() => setShowDropdown(true)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="🔍 국가 이름을 입력하세요 (예: 한국, 일본, 프랑스)"
-                  className="text-xl py-6 h-16 border-3 border-blue-300 focus:border-blue-500 bg-white/80"
-                  aria-label="국가 검색"
-                  aria-expanded={showDropdown}
-                  aria-autocomplete="list"
-                  role="combobox"
-                />
-                
-                {searchTerm.length > 0 && showDropdown && (
-                  <>
-                    {/* 배경 오버레이 - 드롭다운을 더 명확하게 보이게 함 */}
-                    <div 
-                      className="fixed inset-0 z-[9998]" 
-                      onClick={() => setShowDropdown(false)}
-                      style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}
-                    />
-                    
-                    {/* 검색 드롭다운 */}
-                    <div 
-                      className="absolute top-full left-0 right-0 z-[9999] mt-2 bg-white border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto rounded-lg" 
-                      role="listbox"
-                      style={{
-                        position: 'absolute',
-                        zIndex: 9999,
-                        backgroundColor: 'white',
-                        minWidth: '100%',
-                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(59, 130, 246, 0.5)',
-                        border: '2px solid rgb(147 197 253)'
-                      }}
-                    >
-                    <div className="p-0">
-                      {filteredCountries.length > 0 ? (
-                        filteredCountries.map((country, index) => (
-                          <Button
-                            key={country.code}
-                            onClick={() => handleCountrySelect(country)}
-                            variant="ghost"
-                            className={`w-full justify-start p-4 h-auto transition-all duration-200 hover:scale-105 border-b border-gray-100 last:border-b-0 ${
-                              index === selectedIndex 
-                                ? 'bg-blue-100 border-blue-300' 
-                                : 'hover:bg-blue-50'
-                            }`}
-                            role="option"
-                            aria-selected={index === selectedIndex}
-                          >
-                            <span className="text-3xl mr-3 animate-pulse">{country.flag}</span>
-                            <div className="text-left">
-                              <div className="font-bold text-lg">{country.nameKo}</div>
-                              <div className="text-gray-500 text-sm">({country.name})</div>
-                            </div>
-                          </Button>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-gray-500">
-                          검색 결과가 없습니다.
-                        </div>
-                      )}
+              <div className="flex-1">
+                <Button
+                  onClick={() => setShowModal(true)}
+                  variant="outline"
+                  size="lg"
+                  className="w-full h-16 text-xl border-3 border-blue-300 hover:border-blue-500 bg-white/80 hover:bg-blue-50"
+                >
+                  {selectedCountry ? (
+                    <div className="flex items-center">
+                      <span className="text-3xl mr-3">{selectedCountry.flag}</span>
+                      <div className="text-left">
+                        <div className="font-bold">{selectedCountry.nameKo}</div>
+                        <div className="text-gray-500 text-sm">({selectedCountry.name})</div>
+                      </div>
                     </div>
-                  </div>
-                  </>
-                )}
+                  ) : (
+                    <>
+                      <span className="text-2xl mr-3">🔍</span>
+                      국가를 선택하세요
+                    </>
+                  )}
+                </Button>
               </div>
               
               {/* 선택 초기화 버튼 */}
@@ -241,8 +181,7 @@ const CountrySelector = ({
                     <Button
                       onClick={() => {
                         setSearchTerm('');
-                        setShowDropdown(true);
-                        inputRef.current?.focus();
+                        setShowModal(true);
                       }}
                       variant="outline"
                       size="sm"
@@ -384,6 +323,116 @@ const CountrySelector = ({
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Country Selection Modal */}
+      {showModal && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          onClick={() => {
+            setShowModal(false);
+            setSearchTerm('');
+            setSelectedIndex(-1);
+          }}
+        >
+          <div 
+            className="bg-white rounded-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="bg-gradient-to-r from-blue-500 to-purple-500 text-white p-6">
+              <h2 className="text-2xl font-bold text-center flex items-center justify-center gap-3">
+                <span className="text-3xl">🌍</span>
+                국가를 선택해주세요
+                <span className="text-3xl">✨</span>
+              </h2>
+              <p className="text-center text-blue-100 mt-2">
+                여행하고 싶은 국가를 검색하거나 목록에서 선택하세요
+              </p>
+            </div>
+
+            {/* Search Input */}
+            <div className="p-6 border-b border-gray-200">
+              <input
+                ref={modalSearchRef}
+                type="text"
+                placeholder="국가명을 입력하세요 (예: 미국, United States)"
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value);
+                  setSelectedIndex(-1);
+                }}
+                onKeyDown={handleModalKeyDown}
+                className="w-full h-14 px-4 text-lg border-3 border-blue-300 rounded-xl focus:border-blue-500 focus:outline-none bg-blue-50/30"
+              />
+            </div>
+
+            {/* Country List */}
+            <div className="max-h-96 overflow-y-auto p-4">
+              {filteredCountries.length === 0 ? (
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-4">🔍</div>
+                  <p className="text-gray-500 text-lg">
+                    검색 결과가 없습니다
+                  </p>
+                  <p className="text-gray-400 text-sm mt-2">
+                    다른 키워드로 검색해보세요
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2">
+                  {filteredCountries.map((country, index) => (
+                    <button
+                      key={country.code}
+                      onClick={() => handleCountrySelect(country)}
+                      className={`w-full p-4 rounded-xl border-2 transition-all duration-200 text-left ${
+                        index === selectedIndex
+                          ? 'border-blue-500 bg-blue-50 shadow-lg scale-[1.02]'
+                          : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <span className="text-4xl">{country.flag}</span>
+                        <div className="flex-1">
+                          <div className="font-bold text-lg text-gray-800">
+                            {country.nameKo}
+                          </div>
+                          <div className="text-gray-500 text-sm">
+                            {country.name} • {country.continent}
+                          </div>
+                        </div>
+                        {index === selectedIndex && (
+                          <div className="text-blue-500 text-xl">
+                            ➤
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-gray-50 border-t border-gray-200">
+              <div className="flex items-center justify-between text-sm text-gray-500">
+                <div>
+                  💡 키보드 화살표로 이동, Enter로 선택 가능
+                </div>
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    setSearchTerm('');
+                    setSelectedIndex(-1);
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 rounded-lg transition-colors"
+                >
+                  취소 (ESC)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

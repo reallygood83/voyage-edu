@@ -90,14 +90,22 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
     { id: 'playful', name: '재미있는', emoji: '🎪', colors: 'from-green-400 to-blue-500' },
   ];
 
-  // 캔버스에 포스터 그리기
+  // 캔버스에 포스터 그리기 - 안정화된 버전
   const generatePoster = async () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
     setIsGenerating(true);
+    setGeneratedImage(null); // 이전 이미지 클리어
+    
+    // 브라우저가 DOM 업데이트를 완료할 때까지 대기
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    if (!ctx) {
+      setIsGenerating(false);
+      return;
+    }
 
     // 캔버스 크기 설정 (A4 비율 - 210:297)
     canvas.width = 800;
@@ -201,10 +209,19 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
     ctx.textAlign = 'center';
     ctx.fillText('Voyage Edu - 교육적 여행 계획', canvas.width / 2, canvas.height - 40);
 
-    // 생성된 이미지를 데이터 URL로 변환
-    const imageDataUrl = canvas.toDataURL('image/png');
-    setGeneratedImage(imageDataUrl);
-    setIsGenerating(false);
+    // 생성된 이미지를 데이터 URL로 변환 (안정화)
+    try {
+      const imageDataUrl = canvas.toDataURL('image/png');
+      
+      // DOM 업데이트를 안정화하기 위한 지연
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      setGeneratedImage(imageDataUrl);
+    } catch (error) {
+      console.error('포스터 생성 실패:', error);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   // 포스터 다운로드
@@ -263,8 +280,10 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 backdrop-blur-sm">
-      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl transform transition-all duration-300 ease-in-out">
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] p-4 backdrop-blur-sm" 
+         style={{pointerEvents: 'auto'}}>
+      <div className="bg-white rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden shadow-2xl transform transition-none border-4 border-white/20"
+           onClick={(e) => e.stopPropagation()}>
         <div className="flex h-full">
           {/* 설정 패널 */}
           <div className="w-1/2 p-6 border-r overflow-y-auto" style={{ maxHeight: 'calc(90vh - 2rem)' }}>
