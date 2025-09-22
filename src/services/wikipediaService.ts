@@ -27,26 +27,40 @@ export class WikipediaService {
   private static readonly EN_WIKIPEDIA_API_URL = 'https://en.wikipedia.org/w/api.php';
 
   /**
-   * 도시/국가 정보를 Wikipedia에서 가져오기
+   * 도시/국가 정보를 서버사이드 API를 통해 가져오기 (CORS 문제 해결)
    */
   static async getDestinationInfo(cityName: string, countryName?: string): Promise<DestinationInfo | null> {
     try {
-      // 먼저 한국어 Wikipedia에서 검색
-      let info = await this.searchWikipedia(cityName, this.WIKIPEDIA_API_URL);
+      console.log('WikipediaService: 요청 시작', { cityName, countryName });
       
-      // 한국어에서 못 찾으면 영어로 시도
-      if (!info && countryName) {
-        info = await this.searchWikipedia(`${cityName}, ${countryName}`, this.EN_WIKIPEDIA_API_URL);
+      // 서버사이드 API 라우트를 통해 Wikipedia 데이터 가져오기
+      const params = new URLSearchParams({
+        city: cityName,
+        ...(countryName && { country: countryName })
+      });
+      
+      const apiUrl = `/api/wikipedia?${params}`;
+      console.log('WikipediaService: API 호출 URL', apiUrl);
+      
+      const response = await fetch(apiUrl);
+      
+      if (!response.ok) {
+        console.error('WikipediaService: API 응답 오류', response.status, response.statusText);
+        throw new Error(`API 요청 실패: ${response.status}`);
       }
-
-      if (!info) {
-        // Mock 데이터 반환 (실제 API 실패 시)
+      
+      const data = await response.json();
+      console.log('WikipediaService: API 응답 성공', data);
+      
+      if (data.error) {
+        console.error('WikipediaService: API 에러 응답', data.error);
         return this.getMockDestinationInfo(cityName);
       }
-
-      return info;
+      
+      return data;
     } catch (error) {
-      console.error('Wikipedia API error:', error);
+      console.error('WikipediaService: 에러 발생', error);
+      // 네트워크 오류 시 Mock 데이터 반환
       return this.getMockDestinationInfo(cityName);
     }
   }

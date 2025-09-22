@@ -159,6 +159,21 @@ const PromotionalMaterials = ({
           </div>
         )}
         
+        {/* 홍보자료 만들기 통합 버튼 */}
+        <div className="mb-6">
+          <button
+            onClick={() => setMaterialType('brochure')}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all transform hover:scale-105 mb-4"
+          >
+            <div className="flex items-center justify-center gap-3">
+              <span className="text-2xl">🎨</span>
+              <span className="text-xl">홍보자료 만들기</span>
+              <span className="text-2xl">📢</span>
+            </div>
+            <p className="text-sm opacity-90 mt-1">브로슈어, 포스터, SNS 콘텐츠 통합 제작</p>
+          </button>
+        </div>
+
         <div className={`grid grid-cols-1 md:grid-cols-${educationMode ? '4' : '3'} gap-4`}>
           {educationMode && (
             <button

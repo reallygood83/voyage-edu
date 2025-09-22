@@ -105,14 +105,33 @@ export default function CulturalLearning({ onBack }: CulturalLearningProps) {
     setCustomCity(null);
   };
 
-  // LearningCity를 City 타입으로 변환하는 함수
+  // LearningCity를 City 타입으로 변환하는 함수 (CORS 문제 해결을 위해 개선)
   const convertToCity = (learningCity: LearningCity): City => {
+    // 국가별 국가 코드 및 영어 국가명 매핑 (Wikipedia API 검색 최적화)
+    const countryInfoMap: Record<string, { code: string; englishName: string }> = {
+      '일본': { code: 'JP', englishName: 'Japan' },
+      '프랑스': { code: 'FR', englishName: 'France' }, 
+      '미국': { code: 'US', englishName: 'United States' },
+      '태국': { code: 'TH', englishName: 'Thailand' },
+      '호주': { code: 'AU', englishName: 'Australia' },
+      '이탈리아': { code: 'IT', englishName: 'Italy' },
+      '전 세계': { code: 'WORLD', englishName: 'World' }
+    };
+    
+    const countryInfo = countryInfoMap[learningCity.country] || { code: 'XX', englishName: learningCity.country };
+    
+    console.log('학습 도시 변환:', {
+      input: learningCity,
+      countryInfo,
+      willCallApi: `/api/wikipedia?city=${learningCity.name}&country=${countryInfo.englishName}`
+    });
+    
     return {
       id: `${learningCity.name}-${learningCity.country}`,
       name: learningCity.name,
       nameKo: learningCity.nameKo,
-      country: learningCity.country,
-      countryCode: 'XX', // 기본값
+      country: countryInfo.englishName, // 영어 국가명으로 변환하여 Wikipedia API 검색 최적화
+      countryCode: countryInfo.code,
       latitude: 0, // 기본값
       longitude: 0, // 기본값
     };
@@ -266,12 +285,29 @@ export default function CulturalLearning({ onBack }: CulturalLearningProps) {
             <CardHeader>
               <CardTitle className="text-xl flex items-center gap-3">
                 <span className="text-2xl">📖</span>
-                선택된 학습 도시: {selectedCity.nameKo}
+                선택된 학습 도시: {selectedCity.nameKo} 
+                {selectedCity.country !== '전 세계' && (
+                  <Badge variant="outline" className="ml-2">
+                    {selectedCity.country}
+                  </Badge>
+                )}
               </CardTitle>
               <p className="text-gray-600">
                 아래에서 자세한 문화 정보를 탐색해보세요!
               </p>
             </CardHeader>
+          </Card>
+
+          {/* 디버깅 정보 표시 */}
+          <Card className="bg-blue-50 border-blue-200">
+            <CardContent className="p-4">
+              <p className="text-sm text-blue-700">
+                🔍 검색 정보: {selectedCity.name} ({selectedCity.country})
+              </p>
+              <p className="text-xs text-blue-600 mt-1">
+                Wikipedia에서 교육적 자료를 불러오는 중입니다...
+              </p>
+            </CardContent>
           </Card>
 
           <DestinationInfoCard 

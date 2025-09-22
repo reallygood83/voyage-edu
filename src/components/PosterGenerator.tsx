@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -90,16 +90,34 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
     { id: 'playful', name: '재미있는', emoji: '🎪', colors: 'from-green-400 to-blue-500' },
   ];
 
-  // 캔버스에 포스터 그리기 - 안정화된 버전
-  const generatePoster = async () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+  // 메모리 정리 함수
+  const cleanupCanvas = useCallback(() => {
+    if (generatedImage) {
+      URL.revokeObjectURL(generatedImage);
+    }
+  }, [generatedImage]);
 
+  // 컴포넌트 언마운트 시 메모리 정리
+  useEffect(() => {
+    return () => {
+      cleanupCanvas();
+    };
+  }, [cleanupCanvas]);
+
+  // 캔버스에 포스터 그리기 - 완전 안정화된 버전
+  const generatePoster = useCallback(async () => {
+    const canvas = canvasRef.current;
+    if (!canvas || isGenerating) return;
+
+    // 이전 상태 완전 초기화
     setIsGenerating(true);
-    setGeneratedImage(null); // 이전 이미지 클리어
+    setGeneratedImage(null);
     
-    // 브라우저가 DOM 업데이트를 완료할 때까지 대기
-    await new Promise(resolve => setTimeout(resolve, 100));
+    // 이전 이미지 메모리 해제
+    cleanupCanvas();
+    
+    // DOM과 상태 업데이트 안정화 대기
+    await new Promise(resolve => setTimeout(resolve, 150));
     
     const ctx = canvas.getContext('2d');
     if (!ctx) {
@@ -107,9 +125,25 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
       return;
     }
 
-    // 캔버스 크기 설정 (A4 비율 - 210:297)
-    canvas.width = 800;
-    canvas.height = 1131;
+    // 캔버스 크기를 컨테이너에 맞게 동적 설정
+    const container = canvas.parentElement;
+    const containerWidth = container?.clientWidth || 800;
+    const aspectRatio = 297 / 210; // A4 비율
+    
+    canvas.width = Math.min(containerWidth - 40, 800);
+    canvas.height = canvas.width * aspectRatio;
+    
+    // 고화질을 위한 픽셀 밀도 조정
+    const devicePixelRatio = window.devicePixelRatio || 1;
+    const scaledWidth = canvas.width * devicePixelRatio;
+    const scaledHeight = canvas.height * devicePixelRatio;
+    
+    canvas.width = scaledWidth;
+    canvas.height = scaledHeight;
+    canvas.style.width = `${canvas.width / devicePixelRatio}px`;
+    canvas.style.height = `${canvas.height / devicePixelRatio}px`;
+    
+    ctx.scale(devicePixelRatio, devicePixelRatio);
 
     const theme = themes[posterData.theme];
 
@@ -209,20 +243,39 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
     ctx.textAlign = 'center';
     ctx.fillText('Voyage Edu - 교육적 여행 계획', canvas.width / 2, canvas.height - 40);
 
-    // 생성된 이미지를 데이터 URL로 변환 (안정화)
+    // 생성된 이미지를 데이터 URL로 변환 (비동기 안정화)
     try {
-      const imageDataUrl = canvas.toDataURL('image/png');
+      // requestAnimationFrame으로 렌더링 완료 보장
+      await new Promise(resolve => requestAnimationFrame(resolve));
       
-      // DOM 업데이트를 안정화하기 위한 지연
-      await new Promise(resolve => setTimeout(resolve, 200));
+      const imageDataUrl = await new Promise<string>((resolve, reject) => {
+        try {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            } else {
+              reject(new Error('Canvas toBlob 실패'));
+            }
+          }, 'image/png', 0.95);
+        } catch (error) {
+          reject(error);
+        }
+      });
+      
+      // 상태 업데이트 안정화
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       setGeneratedImage(imageDataUrl);
     } catch (error) {
       console.error('포스터 생성 실패:', error);
+      alert('포스터 생성에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsGenerating(false);
     }
-  };
+  }, [isGenerating, posterData, cleanupCanvas]);
 
   // 포스터 다운로드
   const downloadPoster = () => {
@@ -414,7 +467,14 @@ const PosterGenerator = ({ travelPlan, selectedCities, onSave, onClose }: Poster
                   className="w-full"
                   disabled={isGenerating}
                 >
-                  {isGenerating ? '🎨 포스터 생성 중...' : '🎨 포스터 생성하기'}
+                  {isGenerating ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>🎨 포스터 생성 중...</span>
+                    </div>
+                  ) : (
+                    '🎨 포스터 생성하기'
+                  )}
                 </Button>
 
                 {generatedImage && (
