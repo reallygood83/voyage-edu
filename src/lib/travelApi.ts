@@ -49,24 +49,40 @@ export class TravelPriceService {
     passengers: number = 1
   ): Promise<FlightPrice[]> {
     
-    // 실제 항공료 기본 가격 테이블 (KRW)
+    // 실제 항공료 기본 가격 테이블 (KRW) - 출발지별 목적지 가격
     const baseFlightPrices: Record<string, Record<string, number>> = {
       'Seoul': {
-        'Tokyo': 250000,
-        'Paris': 850000,
-        'London': 900000,
-        'New York': 1200000,
-        'Sydney': 750000,
-        'Beijing': 200000,
-        'Bangkok': 350000,
-        'Rome': 950000,
-        'Berlin': 900000,
-        'Barcelona': 950000
+        'Tokyo': 250000, 'Paris': 850000, 'London': 900000, 'New York': 1200000,
+        'Sydney': 750000, 'Beijing': 200000, 'Bangkok': 350000, 'Rome': 950000,
+        'Berlin': 900000, 'Barcelona': 950000, 'Los Angeles': 1300000, 'San Francisco': 1400000,
+        'Nice': 900000, 'Lyon': 950000, 'Shanghai': 300000, 'Guangzhou': 400000,
+        'Edinburgh': 950000, 'Manchester': 950000, 'Munich': 900000, 'Frankfurt': 850000,
+        'Milan': 950000, 'Venice': 1000000, 'Madrid': 950000, 'Seville': 1000000,
+        'Melbourne': 800000, 'Brisbane': 900000, 'Phuket': 400000, 'Chiang Mai': 450000
       },
-      // 다른 출발지는 Seoul 기준으로 조정
+      'Tokyo': {
+        'Seoul': 250000, 'Paris': 800000, 'London': 850000, 'New York': 1100000,
+        'Sydney': 600000, 'Beijing': 350000, 'Bangkok': 450000, 'Rome': 900000,
+        'Berlin': 850000, 'Barcelona': 900000
+      },
+      'Beijing': {
+        'Seoul': 200000, 'Tokyo': 350000, 'Paris': 750000, 'London': 800000,
+        'New York': 1000000, 'Sydney': 650000, 'Bangkok': 400000
+      },
+      'Bangkok': {
+        'Seoul': 350000, 'Tokyo': 450000, 'Paris': 650000, 'London': 700000,
+        'New York': 900000, 'Sydney': 500000, 'Beijing': 400000
+      }
     };
 
     const getBasePrice = (from: string, to: string): number => {
+      // 출발지별 가격표가 있으면 사용, 없으면 Seoul 기준으로 조정
+      const fromPrices = baseFlightPrices[from];
+      if (fromPrices && fromPrices[to]) {
+        return fromPrices[to];
+      }
+      
+      // Seoul 기준 가격을 기본값으로 사용
       const seoulPrices = baseFlightPrices['Seoul'];
       return seoulPrices[to] || 800000; // 기본값
     };

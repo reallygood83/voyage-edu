@@ -235,22 +235,54 @@ const AIRLINE_NAMES: Record<string, string> = {
   'JP': '아드리아항공'
 };
 
-// 공항 코드 매핑
+// 공항 코드 매핑 - constants.ts의 모든 도시 포함
 const AIRPORT_CODES: Record<string, string> = {
+  // 한국
   'Seoul': 'ICN',
+  'Busan': 'PUS',
+  'Jeju': 'CJU',
+  // 일본
   'Tokyo': 'NRT',
+  'Osaka': 'KIX',
+  'Kyoto': 'ITM',
+  // 중국
   'Beijing': 'PEK',
-  'Bangkok': 'BKK',
-  'Paris': 'CDG',
-  'London': 'LHR',
+  'Shanghai': 'PVG',
+  'Guangzhou': 'CAN',
+  // 미국
   'New York': 'JFK',
-  'Sydney': 'SYD',
-  'Rome': 'FCO',
+  'Los Angeles': 'LAX',
+  'San Francisco': 'SFO',
+  // 프랑스
+  'Paris': 'CDG',
+  'Nice': 'NCE',
+  'Lyon': 'LYS',
+  // 영국
+  'London': 'LHR',
+  'Edinburgh': 'EDI',
+  'Manchester': 'MAN',
+  // 독일
   'Berlin': 'BER',
+  'Munich': 'MUC',
+  'Frankfurt': 'FRA',
+  // 이탈리아
+  'Rome': 'FCO',
+  'Milan': 'MXP',
+  'Venice': 'VCE',
+  // 스페인
   'Barcelona': 'BCN',
   'Madrid': 'MAD',
+  'Seville': 'SVQ',
+  // 호주
+  'Sydney': 'SYD',
+  'Melbourne': 'MEL',
+  'Brisbane': 'BNE',
+  // 태국
+  'Bangkok': 'BKK',
+  'Phuket': 'HKT',
+  'Chiang Mai': 'CNX',
+  // 기존 매핑 유지
   'Amsterdam': 'AMS',
-  'Frankfurt': 'FRA',
   'Zurich': 'ZUR',
   'Vienna': 'VIE',
   'Prague': 'PRG',

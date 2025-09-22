@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { City, TravelPlan, StandardizedFlight } from '@/types';
 import { TravelPriceService, FlightPrice, HotelPrice, ActivityPrice } from '@/lib/travelApi';
 import { AmadeusService } from '@/services/amadeusService';
+import { MAJOR_CITIES, COUNTRIES } from '@/utils/constants';
 import { CustomActivityModal } from './CustomActivityModal';
 import { DestinationInfoCard } from './DestinationInfoCard';
 import PosterGenerator from './PosterGenerator';
@@ -72,7 +73,9 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
     travelers: 2,
     accommodationLevel: 'standard' as 'budget' | 'standard' | 'premium',
     mealLevel: 'standard' as 'budget' | 'standard' | 'premium',
-    includeActivities: true
+    includeActivities: true,
+    departureCountry: 'KR' as string,
+    departureCity: 'seoul' as string
   });
 
   // 실시간 가격 데이터
@@ -130,11 +133,18 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
     setLoading(true);
     try {
       // 항공료 조회
-      // Amadeus API를 사용한 항공편 검색
+      // 선택한 출발지에서 도착지로의 항공편 검색
+      const departureCityData = MAJOR_CITIES[tripInfo.departureCountry as keyof typeof MAJOR_CITIES]
+        ?.find(city => city.id === tripInfo.departureCity);
+      const departureIATA = departureCityData?.iataCode || 'ICN';
+      
+      // 선택한 도시의 공항 코드 확인
+      const destinationIATA = selectedCities[0].iataCode || selectedCities[0].name;
+      
       try {
         const flights = await AmadeusService.searchFlights({
-           origin: 'ICN', // 인천국제공항
-           destination: selectedCities[0].iataCode || 'NRT', // 기본값으로 나리타 공항
+           origin: departureIATA,
+           destination: destinationIATA,
            departureDate: tripInfo.startDate,
            returnDate: tripInfo.endDate,
            adults: tripInfo.travelers,
@@ -150,8 +160,8 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
         console.error('Amadeus API 오류, 목업 데이터 사용:', error);
         // Amadeus API 실패 시 목업 데이터 사용
         const mockFlights = AmadeusService.getMockFlights(
-          'ICN',
-          selectedCities[0].iataCode || 'NRT',
+          departureIATA,
+          destinationIATA,
           tripInfo.startDate,
           tripInfo.endDate,
           tripInfo.travelers
@@ -179,8 +189,11 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
       setActivityOptions(activities);
 
       // 예산 자동 계산
+      const departureCityName = MAJOR_CITIES[tripInfo.departureCountry as keyof typeof MAJOR_CITIES]
+        ?.find(city => city.id === tripInfo.departureCity)?.name || 'Seoul';
+      
       const budget = await TravelPriceService.calculateTotalBudget({
-        origin: 'Seoul',
+        origin: departureCityName,
         destinations: selectedCities,
         departureDate: tripInfo.startDate,
         returnDate: tripInfo.endDate,
@@ -387,6 +400,51 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
           value={tripInfo.travelers}
           onChange={(e) => setTripInfo(prev => ({ ...prev, travelers: parseInt(e.target.value) || 1 }))}
         />
+      </div>
+
+      {/* 출발지 선택 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            출발 국가
+          </label>
+          <select
+            value={tripInfo.departureCountry}
+            onChange={(e) => {
+              const newCountry = e.target.value;
+              const firstCity = MAJOR_CITIES[newCountry as keyof typeof MAJOR_CITIES]?.[0]?.id || '';
+              setTripInfo(prev => ({ 
+                ...prev, 
+                departureCountry: newCountry,
+                departureCity: firstCity
+              }));
+            }}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            {COUNTRIES.map(country => (
+              <option key={country.code} value={country.code}>
+                {country.flag} {country.nameKo}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            출발 도시
+          </label>
+          <select
+            value={tripInfo.departureCity}
+            onChange={(e) => setTripInfo(prev => ({ ...prev, departureCity: e.target.value }))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+          >
+            {(MAJOR_CITIES[tripInfo.departureCountry as keyof typeof MAJOR_CITIES] || []).map(city => (
+              <option key={city.id} value={city.id}>
+                {city.nameKo} ({city.name})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

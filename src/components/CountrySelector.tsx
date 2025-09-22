@@ -147,8 +147,28 @@ const CountrySelector = ({
                   role="combobox"
                 />
                 
-                {searchTerm.length > 0 && showDropdown && !selectedCountry && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-2 bg-white border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto rounded-lg" role="listbox">
+                {searchTerm.length > 0 && showDropdown && (
+                  <>
+                    {/* 배경 오버레이 - 드롭다운을 더 명확하게 보이게 함 */}
+                    <div 
+                      className="fixed inset-0 z-[9998]" 
+                      onClick={() => setShowDropdown(false)}
+                      style={{ backgroundColor: 'rgba(0, 0, 0, 0.1)' }}
+                    />
+                    
+                    {/* 검색 드롭다운 */}
+                    <div 
+                      className="absolute top-full left-0 right-0 z-[9999] mt-2 bg-white border-2 border-blue-200 shadow-2xl max-h-60 overflow-y-auto rounded-lg" 
+                      role="listbox"
+                      style={{
+                        position: 'absolute',
+                        zIndex: 9999,
+                        backgroundColor: 'white',
+                        minWidth: '100%',
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(59, 130, 246, 0.5)',
+                        border: '2px solid rgb(147 197 253)'
+                      }}
+                    >
                     <div className="p-0">
                       {filteredCountries.length > 0 ? (
                         filteredCountries.map((country, index) => (
@@ -178,6 +198,7 @@ const CountrySelector = ({
                       )}
                     </div>
                   </div>
+                  </>
                 )}
               </div>
               
