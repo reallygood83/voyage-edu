@@ -3,11 +3,14 @@
 import { useState, useEffect } from 'react'
 import { TravelPlan } from '@/types'
 import TravelPlanCard from './TravelPlanCard'
+import TravelPlanDetailView from './TravelPlanDetailView'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Search, Filter, TrendingUp, Heart, Eye, Calendar } from 'lucide-react'
+import { Search, Filter, TrendingUp, Heart, Eye, Calendar, Plus, Upload } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface CommunityPlan extends TravelPlan {
   id: string
@@ -32,6 +35,9 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
   const [sortBy, setSortBy] = useState('latest')
   const [filterTag, setFilterTag] = useState('all')
   const [loading, setLoading] = useState(true)
+  const [selectedPlan, setSelectedPlan] = useState<CommunityPlan | null>(null)
+  const [showDetailView, setShowDetailView] = useState(false)
+  const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
 
   // 샘플 커뮤니티 데이터
   useEffect(() => {
@@ -207,10 +213,69 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
         p.id === planId ? { ...p, views: p.views + 1 } : p
       ))
       
+      // 상세보기 모드로 전환
+      setSelectedPlan(plan)
+      setShowDetailView(true)
+      
       if (onPlanSelect) {
         onPlanSelect(plan)
       }
     }
+  }
+
+  const handleBackToList = () => {
+    setShowDetailView(false)
+    setSelectedPlan(null)
+  }
+
+  const handleUploadPlan = () => {
+    if (userPlan) {
+      const userCommunityPlan: CommunityPlan = {
+        ...userPlan,
+        id: `user-plan-${Date.now()}`,
+        author: '나의 여행계획',
+        likes: 0,
+        views: 1,
+        isLiked: false,
+        rating: 5.0,
+        createdAt: new Date().toISOString(),
+        tags: generateTags(userPlan)
+      }
+      
+      setPlans(prev => [userCommunityPlan, ...prev])
+      setIsUploadDialogOpen(false)
+      alert('여행 계획이 커뮤니티에 성공적으로 공유되었습니다! 🎉')
+    }
+  }
+
+  const generateTags = (plan: TravelPlan): string[] => {
+    const tags = ['나의계획']
+    
+    if (plan.cities) {
+      if (plan.cities.length === 1) tags.push('단일도시')
+      else if (plan.cities.length >= 3) tags.push('다중도시')
+      
+      // 도시 기반 태그
+      if (plan.cities.some(city => ['Tokyo', 'Osaka', 'Kyoto'].includes(city))) {
+        tags.push('일본여행')
+      }
+      if (plan.cities.some(city => ['Seoul', 'Busan', 'Jeju'].includes(city))) {
+        tags.push('국내여행')
+      }
+    }
+    
+    const tripDays = plan.startDate && plan.endDate ? 
+      Math.ceil((new Date(plan.endDate).getTime() - new Date(plan.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1 : 0
+    
+    if (tripDays <= 3) tags.push('단기여행')
+    else if (tripDays >= 7) tags.push('장기여행')
+    
+    if (plan.totalBudget) {
+      if (plan.totalBudget <= 500000) tags.push('저예산')
+      else if (plan.totalBudget >= 1500000) tags.push('프리미엄')
+    }
+    
+    return tags
   }
 
   const allTags = [...new Set(plans.flatMap(plan => plan.tags))]
@@ -224,13 +289,62 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
     )
   }
 
+  // 상세보기 모드
+  if (showDetailView && selectedPlan) {
+    return (
+      <TravelPlanDetailView 
+        plan={selectedPlan}
+        onBack={handleBackToList}
+        onLike={handleLike}
+        onShare={handleShare}
+      />
+    )
+  }
+
   return (
     <div className="w-full max-w-7xl mx-auto p-6">
       {/* 헤더 */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <TrendingUp className="w-8 h-8 text-blue-600" />
-          <h2 className="text-3xl font-bold text-gray-800">여행 계획 커뮤니티</h2>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <TrendingUp className="w-8 h-8 text-blue-600" />
+            <h2 className="text-3xl font-bold text-gray-800">여행 계획 커뮤니티</h2>
+          </div>
+          {userPlan && (
+            <Dialog open={isUploadDialogOpen} onOpenChange={setIsUploadDialogOpen}>
+              <DialogTrigger asChild>
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <Upload className="w-4 h-4 mr-2" />
+                  내 계획 공유하기
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>여행 계획 공유하기</DialogTitle>
+                  <DialogDescription>
+                    나의 여행 계획을 커뮤니티에 공유하여 다른 여행자들과 나누세요!
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <h4 className="font-semibold mb-2">공유할 계획</h4>
+                    <p className="text-gray-600">{userPlan.cities?.join(' → ') || userPlan.title}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {userPlan.startDate} ~ {userPlan.endDate}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => setIsUploadDialogOpen(false)}>
+                      취소
+                    </Button>
+                    <Button onClick={handleUploadPlan} className="bg-blue-600 hover:bg-blue-700">
+                      공유하기
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
         <p className="text-gray-600">다른 여행자들의 멋진 여행 계획을 둘러보고 영감을 받아보세요!</p>
       </div>

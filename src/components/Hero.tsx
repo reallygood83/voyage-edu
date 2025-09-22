@@ -24,10 +24,10 @@ const Hero = () => {
   }, [words.length]);
 
   const features = [
-    { icon: "🎓", title: "교육적 체험", desc: "실제 데이터로 배워요" },
-    { icon: "🤝", title: "문화 이해", desc: "세계 문화를 알아가요" },
-    { icon: "💡", title: "창의적 사고", desc: "나만의 아이디어를 펼쳐요" },
-    { icon: "🎨", title: "디자인 능력", desc: "멋진 작품을 만들어요" }
+    { icon: "🎓", title: "AI 교육 플랫폼", desc: "실제 데이터로 똑똑하게 배워요", highlight: "AI 기반" },
+    { icon: "🌍", title: "80개 도시 DB", desc: "세계 문화를 체계적으로 학습해요", highlight: "방대한 데이터" },
+    { icon: "🎯", title: "상품 기획 체험", desc: "진짜 여행사처럼 계획해요", highlight: "실무 경험" },
+    { icon: "🤝", title: "커뮤니티 공유", desc: "친구들과 작품을 나눠요", highlight: "소셜 학습" }
   ];
 
   return (
@@ -45,13 +45,19 @@ const Hero = () => {
       <div className="container mx-auto text-center relative z-10">
         <div className={`transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
+            <span className="inline-block animate-bounce">🎓</span>
+            <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent mx-3">
+              AI 기반
+            </span>
             <span className="inline-block animate-bounce">🌍</span>
             <br />
             <span className="bg-gradient-to-r from-yellow-300 to-orange-300 bg-clip-text text-transparent">
-              세계 문화 여행 상품
+              세계 문화 교육 플랫폼
             </span>
             <br />
-            <span className="text-white">만들기</span>
+            <span className="text-2xl md:text-4xl text-white/90 font-medium">
+              여행 상품 기획 & 문화 학습
+            </span>
           </h1>
           
           <div className="text-2xl md:text-3xl mb-8 h-16 flex items-center justify-center">
