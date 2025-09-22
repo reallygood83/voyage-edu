@@ -5,7 +5,7 @@ import Hero from '@/components/Hero';
 import CountrySelector from '@/components/CountrySelector';
 import EnhancedTravelPlanBuilder from '@/components/EnhancedTravelPlanBuilder';
 import PromotionalMaterials from '@/components/PromotionalMaterials';
-import CulturalLearning from '@/components/CulturalLearning';
+import SimpleCulturalLearning from '@/components/SimpleCulturalLearning';
 import { Country, City, TravelPlan } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -226,7 +226,7 @@ export default function Home() {
           )}
           
           {activeTab === 'learn' && (
-            <CulturalLearning
+            <SimpleCulturalLearning
               onBack={() => setActiveTab('search')}
             />
           )}
