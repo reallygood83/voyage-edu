@@ -13,7 +13,6 @@ import { AmadeusService } from '@/services/amadeusService';
 import { MAJOR_CITIES, COUNTRIES } from '@/utils/constants';
 import { CustomActivityModal } from './CustomActivityModal';
 import { DestinationInfoCard } from './DestinationInfoCard';
-import PosterGenerator from './PosterGenerator';
 import CommunityGallery from './CommunityGallery';
 import CulturalLearningCard from './CulturalLearningCard';
 
@@ -116,8 +115,7 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
     '🎯 활동 선택',
     '📋 상세 일정',
     '💰 예산 확인',
-    '🎨 포스터 생성',
-    '🌐 커뮤니티 공유'
+    '🌐 홍보 자료 만들기'
   ];
 
   // 여행 일수 계산
@@ -753,7 +751,7 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
           이전
         </Button>
         <Button onClick={() => setCurrentStep(6)}>
-          다음: 포스터 생성
+          다음: 홍보 자료 만들기
         </Button>
       </div>
     </div>
@@ -1111,8 +1109,8 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
     </div>
   );
 
-  // 포스터 생성 단계
-  const renderPosterGeneration = () => {
+  // 홍보 자료 만들기 단계 (포스터 없이 커뮤니티 공유 중심)
+  const renderPromotionalMaterials = () => {
     const finalPlan: TravelPlan = {
       id: Date.now().toString(),
       title: `${selectedCities.map(c => c.name).join(', ')} 여행`,
@@ -1136,12 +1134,12 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
     return (
       <div className="space-y-6">
         <div className="text-center">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">🎨 여행 포스터 생성</h3>
-          <p className="text-gray-600">완성된 여행 계획으로 멋진 포스터를 만들어보세요!</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">🌐 홍보 자료 만들기</h3>
+          <p className="text-gray-600">완성된 여행 계획을 커뮤니티에 공유하고 다른 여행자들과 소통해보세요!</p>
         </div>
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h4 className="font-medium text-blue-800 mb-2">📋 여행 계획 요약</h4>
+          <h4 className="font-medium text-blue-800 mb-2">📋 완성된 여행 계획</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
               <span className="text-blue-600 font-medium">여행지</span>
@@ -1162,12 +1160,21 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
           </div>
         </div>
 
-        <PosterGenerator 
-          travelPlan={finalPlan} 
-          selectedCities={selectedCities}
-          onSave={(material) => {
-            console.log('포스터가 생성되었습니다:', material);
-            // 필요시 포스터 데이터를 저장하는 로직 추가
+        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <h4 className="font-medium text-blue-800 mb-2">🎯 교육적 가치</h4>
+          <div className="text-sm text-blue-700 space-y-1">
+            <p>• 다양한 여행 스타일과 문화적 관점 학습</p>
+            <p>• 예산 관리와 계획 수립 능력 향상</p>
+            <p>• 지역별 특색과 역사적 배경 이해</p>
+            <p>• 협업과 소통을 통한 사회성 발달</p>
+          </div>
+        </div>
+
+        <CommunityGallery 
+          userPlan={finalPlan}
+          onPlanSelect={(plan) => {
+            console.log('선택된 계획:', plan);
+            // 선택된 계획을 상세 보기로 처리
           }}
         />
 
@@ -1189,74 +1196,6 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
     );
   };
 
-  // 커뮤니티 갤러리 렌더링
-  const renderCommunityGallery = () => {
-    const finalPlan: TravelPlan = {
-      id: Date.now().toString(),
-      title: `${selectedCities.map(c => c.name).join(', ')} 여행`,
-      description: `${getTripDays()}일간의 ${selectedCities.map(c => c.name).join(' → ')} 여행`,
-      duration: `${getTripDays()}일`,
-      budget: budgetBreakdown.total,
-      budgetBreakdown,
-      dailySchedules,
-      selectedFlight: selectedFlight || undefined,
-      selectedHotels,
-      selectedActivities,
-      travelers: tripInfo.travelers,
-      startDate: tripInfo.startDate,
-      endDate: tripInfo.endDate,
-      cities: selectedCities.map(c => c.name),
-      accommodationLevel: tripInfo.accommodationLevel,
-      mealLevel: tripInfo.mealLevel,
-      createdAt: new Date().toISOString()
-    };
-
-    return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <h3 className="text-xl font-bold text-gray-900 mb-2">🌐 커뮤니티에서 영감받기</h3>
-          <p className="text-gray-600">다른 여행자들의 계획을 둘러보고 나만의 여행을 공유해보세요!</p>
-        </div>
-
-        <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-4 mb-6">
-          <h4 className="font-medium text-blue-800 mb-2">🎯 교육적 가치</h4>
-          <div className="text-sm text-blue-700 space-y-1">
-            <p>• 다양한 여행 스타일과 문화적 관점 학습</p>
-            <p>• 예산 관리와 계획 수립 능력 향상</p>
-            <p>• 지역별 특색과 역사적 배경 이해</p>
-            <p>• 협업과 소통을 통한 사회성 발달</p>
-          </div>
-        </div>
-
-        <CommunityGallery 
-          userPlan={finalPlan}
-          onPlanSelect={(plan) => {
-            console.log('선택된 계획:', plan);
-            // 선택된 계획을 상세 보기로 처리
-          }}
-        />
-
-        <div className="flex justify-between pt-6 border-t">
-          <Button 
-            variant="outline" 
-            onClick={() => setCurrentStep(currentStep - 1)}
-          >
-            이전 단계
-          </Button>
-          
-          <Button 
-            onClick={() => {
-              console.log('커뮤니티 활동 완료!');
-              // 최종 완료 처리
-            }}
-            className="bg-green-600 hover:bg-green-700"
-          >
-            여행 계획 완료! 🎉
-          </Button>
-        </div>
-      </div>
-    );
-  };
 
   // 단계별 렌더링
   const renderCurrentStep = () => {
@@ -1267,8 +1206,7 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
       case 3: return renderActivitySelection();
       case 4: return renderDetailedSchedule();
       case 5: return renderBudgetSummary();
-      case 6: return renderPosterGeneration();
-      case 7: return renderCommunityGallery();
+      case 6: return renderPromotionalMaterials();
       default: return renderBasicInfo();
     }
   };
