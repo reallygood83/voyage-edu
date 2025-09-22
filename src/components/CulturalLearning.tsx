@@ -13,8 +13,21 @@ interface CulturalLearningProps {
   onBack?: () => void;
 }
 
+// 간소화된 학습용 타입
+interface LearningCity {
+  name: string;
+  nameKo: string;
+  country: string;
+}
+
+interface LearningCountry {
+  name: string;
+  nameKo: string;
+  flag: string;
+}
+
 // 인기 학습 도시 데이터
-const POPULAR_DESTINATIONS: Array<{country: Country, cities: City[]}> = [
+const POPULAR_DESTINATIONS: Array<{country: LearningCountry, cities: LearningCity[]}> = [
   {
     country: { name: 'Japan', nameKo: '일본', flag: '🇯🇵' },
     cities: [
@@ -66,16 +79,16 @@ const POPULAR_DESTINATIONS: Array<{country: Country, cities: City[]}> = [
 ];
 
 export default function CulturalLearning({ onBack }: CulturalLearningProps) {
-  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+  const [selectedCity, setSelectedCity] = useState<LearningCity | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [customCity, setCustomCity] = useState<City | null>(null);
+  const [customCity, setCustomCity] = useState<LearningCity | null>(null);
   const [activeTab, setActiveTab] = useState<'popular' | 'search'>('popular');
 
   // 검색 기능
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      const newCity: City = {
+      const newCity: LearningCity = {
         name: searchQuery.trim(),
         nameKo: searchQuery.trim(),
         country: '전 세계'
@@ -87,9 +100,22 @@ export default function CulturalLearning({ onBack }: CulturalLearningProps) {
   };
 
   // 도시 선택
-  const handleCitySelect = (city: City) => {
+  const handleCitySelect = (city: LearningCity) => {
     setSelectedCity(city);
     setCustomCity(null);
+  };
+
+  // LearningCity를 City 타입으로 변환하는 함수
+  const convertToCity = (learningCity: LearningCity): City => {
+    return {
+      id: `${learningCity.name}-${learningCity.country}`,
+      name: learningCity.name,
+      nameKo: learningCity.nameKo,
+      country: learningCity.country,
+      countryCode: 'XX', // 기본값
+      latitude: 0, // 기본값
+      longitude: 0, // 기본값
+    };
   };
 
   return (
@@ -249,7 +275,7 @@ export default function CulturalLearning({ onBack }: CulturalLearningProps) {
           </Card>
 
           <DestinationInfoCard 
-            city={selectedCity} 
+            city={convertToCity(selectedCity)} 
             isExpanded={true}
           />
         </div>
