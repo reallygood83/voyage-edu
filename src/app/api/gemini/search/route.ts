@@ -19,15 +19,53 @@ export async function POST(request: NextRequest) {
     const prompt = `
       도시: ${city}
       
-      이 도시에 대한 여행 및 문화 정보를 다음 형식으로 제공해주세요:
+      아래 형식에 맞춰 ${city}에 대한 상세한 여행 및 문화 정보를 제공해주세요.
+      각 섹션은 명확하게 구분하고, 풍부한 내용을 포함해주세요.
       
-      1. 도시 소개 (2-3문장)
-      2. 주요 특징 3가지
-      3. 문화 정보 (언어, 화폐, 최적 여행 시기, 유명한 것들)
-      4. 여행 팁 3가지
-      5. 교육적 학습 포인트 3가지
+      [기본 정보]
+      - 도시 소개: (3-4문장으로 도시의 특징과 매력을 설명)
+      - 국가: (도시가 속한 국가)
+      - 인구: (대략적인 인구수)
+      - 면적: (도시 면적)
       
-      간단하고 명확하게 답변해주세요.
+      [주요 특징]
+      1. (첫 번째 주요 특징)
+      2. (두 번째 주요 특징)
+      3. (세 번째 주요 특징)
+      
+      [문화 정보]
+      - 언어: (공용어 및 주요 사용 언어)
+      - 화폐: (통화 단위 및 환율 정보)
+      - 최적 여행 시기: (계절별 특징 포함)
+      - 시차: (한국 기준 시차)
+      - 종교: (주요 종교)
+      - 음식 문화: (대표 음식 3-4가지)
+      
+      [유명한 것들]
+      1. (관광지/명소 1)
+      2. (관광지/명소 2)
+      3. (관광지/명소 3)
+      4. (특산품/문화 1)
+      5. (특산품/문화 2)
+      
+      [여행 팁]
+      1. (실용적인 팁 1)
+      2. (실용적인 팁 2)
+      3. (실용적인 팁 3)
+      4. (실용적인 팁 4)
+      5. (실용적인 팁 5)
+      
+      [교육적 학습 포인트]
+      1. (역사/문화 관련 학습 포인트)
+      2. (지리/환경 관련 학습 포인트)
+      3. (사회/경제 관련 학습 포인트)
+      
+      [추천 활동]
+      1. (가족/어린이 추천 활동)
+      2. (문화 체험 활동)
+      3. (교육적 활동)
+      
+      각 정보는 구체적이고 유용하게 작성해주세요.
     `;
 
     const result = await model.generateContent(prompt);
@@ -35,18 +73,10 @@ export async function POST(request: NextRequest) {
     const text = response.text();
 
     // 텍스트 파싱하여 구조화된 데이터로 변환
-    const lines = text.split('\n').filter(line => line.trim());
+    console.log('Gemini API 응답:', text);
     
-    // 간단한 파싱 로직
-    const searchResult = {
-      city: city,
-      country: extractCountry(text),
-      summary: extractSummary(lines),
-      highlights: extractHighlights(lines),
-      culturalInfo: extractCulturalInfo(lines),
-      travelTips: extractTravelTips(lines),
-      learningPoints: extractLearningPoints(lines),
-    };
+    const searchResult = parseGeminiResponse(text, city);
+    console.log('파싱된 결과:', searchResult);
 
     return NextResponse.json(searchResult);
   } catch (error) {
@@ -58,107 +88,101 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// 파싱 헬퍼 함수들
-function extractCountry(text: string): string {
-  // 국가 정보 추출 로직
-  const countryMatch = text.match(/국가[:\s]+([^\n,]+)/i);
-  return countryMatch ? countryMatch[1].trim() : '';
-}
-
-function extractSummary(lines: string[]): string {
-  // 첫 2-3문장을 요약으로 사용
-  const summaryLines = lines.slice(0, 3).join(' ');
-  return summaryLines.substring(0, 200);
-}
-
-function extractHighlights(lines: string[]): string[] {
-  const highlights: string[] = [];
-  let inHighlights = false;
+// 강화된 파싱 함수
+function parseGeminiResponse(text: string, city: string): any {
+  const sections = extractSections(text);
   
-  for (const line of lines) {
-    if (line.includes('주요 특징') || line.includes('특징')) {
-      inHighlights = true;
-      continue;
-    }
-    if (inHighlights && line.match(/^\d\.|^-|^•/)) {
-      highlights.push(line.replace(/^\d\.|^-|^•/, '').trim());
-      if (highlights.length >= 3) break;
-    }
-  }
-  
-  return highlights.slice(0, 3);
-}
-
-function extractCulturalInfo(lines: string[]): any {
-  const culturalInfo = {
-    language: '',
-    currency: '',
-    bestTimeToVisit: '',
-    famousFor: [] as string[],
+  return {
+    city: city,
+    country: extractFromSection(sections, '기본 정보', '국가') || 'Unknown',
+    summary: extractFromSection(sections, '기본 정보', '도시 소개') || `${city}는 매력적인 도시입니다.`,
+    basicInfo: {
+      population: extractFromSection(sections, '기본 정보', '인구') || '정보 없음',
+      area: extractFromSection(sections, '기본 정보', '면적') || '정보 없음',
+    },
+    highlights: extractListFromSection(sections, '주요 특징') || ['역사적 의미', '문화적 다양성', '독특한 매력'],
+    culturalInfo: {
+      language: extractFromSection(sections, '문화 정보', '언어') || '현지 언어',
+      currency: extractFromSection(sections, '문화 정보', '화폐') || '현지 통화',
+      bestTimeToVisit: extractFromSection(sections, '문화 정보', '최적 여행 시기') || '봄, 가을',
+      timezone: extractFromSection(sections, '문화 정보', '시차') || '정보 없음',
+      religion: extractFromSection(sections, '문화 정보', '종교') || '다양한 종교',
+      foodCulture: extractFromSection(sections, '문화 정보', '음식 문화') || '현지 특색 음식',
+      famousFor: extractListFromSection(sections, '유명한 것들') || ['관광 명소', '전통 문화', '현지 음식']
+    },
+    travelTips: extractListFromSection(sections, '여행 팁') || [
+      '현지 문화를 존중하세요',
+      '기본 인사말을 배우세요',
+      '교통 패스를 활용하세요'
+    ],
+    learningPoints: extractListFromSection(sections, '교육적 학습 포인트') || [
+      '현지 역사 이해하기',
+      '전통 문화 체험하기',
+      '언어 기초 배우기'
+    ],
+    recommendedActivities: extractListFromSection(sections, '추천 활동') || [
+      '가족 친화적 활동',
+      '문화 체험',
+      '교육적 견학'
+    ]
   };
-
-  const text = lines.join('\n');
-  
-  // 언어 추출
-  const langMatch = text.match(/언어[:\s]+([^\n,]+)/i);
-  culturalInfo.language = langMatch ? langMatch[1].trim() : '현지 언어';
-  
-  // 화폐 추출
-  const currencyMatch = text.match(/화폐[:\s]+([^\n,]+)/i);
-  culturalInfo.currency = currencyMatch ? currencyMatch[1].trim() : '현지 통화';
-  
-  // 최적 시기 추출
-  const timeMatch = text.match(/최적[^\n]*시기[:\s]+([^\n]+)/i);
-  culturalInfo.bestTimeToVisit = timeMatch ? timeMatch[1].trim() : '봄, 가을';
-  
-  // 유명한 것들 추출
-  const famousMatch = text.match(/유명[^\n]*[:\s]+([^\n]+)/i);
-  if (famousMatch) {
-    culturalInfo.famousFor = famousMatch[1].split(/,|、/).map(item => item.trim()).slice(0, 3);
-  }
-  
-  return culturalInfo;
 }
 
-function extractTravelTips(lines: string[]): string[] {
-  const tips: string[] = [];
-  let inTips = false;
-  
+function extractSections(text: string): Record<string, string> {
+  const sections: Record<string, string> = {};
+  const lines = text.split('\n');
+  let currentSection = '';
+  let currentContent: string[] = [];
+
   for (const line of lines) {
-    if (line.includes('여행 팁') || line.includes('팁')) {
-      inTips = true;
-      continue;
-    }
-    if (inTips && line.match(/^\d\.|^-|^•/)) {
-      tips.push(line.replace(/^\d\.|^-|^•/, '').trim());
-      if (tips.length >= 3) break;
+    const trimmedLine = line.trim();
+    
+    // 섹션 헤더 감지 ([섹션명] 형태)
+    const sectionMatch = trimmedLine.match(/^\[([^\]]+)\]$/);
+    if (sectionMatch) {
+      // 이전 섹션 저장
+      if (currentSection && currentContent.length > 0) {
+        sections[currentSection] = currentContent.join('\n');
+      }
+      
+      // 새 섹션 시작
+      currentSection = sectionMatch[1];
+      currentContent = [];
+    } else if (currentSection && trimmedLine) {
+      currentContent.push(trimmedLine);
     }
   }
   
-  return tips.slice(0, 3);
+  // 마지막 섹션 저장
+  if (currentSection && currentContent.length > 0) {
+    sections[currentSection] = currentContent.join('\n');
+  }
+  
+  return sections;
 }
 
-function extractLearningPoints(lines: string[]): string[] {
-  const points: string[] = [];
-  let inPoints = false;
+function extractFromSection(sections: Record<string, string>, sectionName: string, fieldName: string): string | null {
+  const section = sections[sectionName];
+  if (!section) return null;
+  
+  const fieldMatch = section.match(new RegExp(`-\\s*${fieldName}[:\\s]+(.+?)(?:\\n|$)`, 'i'));
+  return fieldMatch ? fieldMatch[1].trim() : null;
+}
+
+function extractListFromSection(sections: Record<string, string>, sectionName: string): string[] | null {
+  const section = sections[sectionName];
+  if (!section) return null;
+  
+  const lines = section.split('\n');
+  const listItems: string[] = [];
   
   for (const line of lines) {
-    if (line.includes('학습 포인트') || line.includes('교육')) {
-      inPoints = true;
-      continue;
-    }
-    if (inPoints && line.match(/^\d\.|^-|^•/)) {
-      points.push(line.replace(/^\d\.|^-|^•/, '').trim());
-      if (points.length >= 3) break;
+    const trimmedLine = line.trim();
+    const listMatch = trimmedLine.match(/^\d+\.\s*(.+)$/);
+    if (listMatch) {
+      listItems.push(listMatch[1].trim());
     }
   }
   
-  // 학습 포인트가 없으면 기본값 제공
-  if (points.length === 0) {
-    points.push('현지 문화와 전통 이해하기');
-    points.push('역사적 배경 알아보기');
-    points.push('언어와 인사말 배우기');
-  }
-  
-  return points.slice(0, 3);
+  return listItems.length > 0 ? listItems : null;
 }

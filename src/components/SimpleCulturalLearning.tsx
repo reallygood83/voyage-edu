@@ -21,15 +21,23 @@ interface AISearchResult {
   city: string;
   country: string;
   summary: string;
+  basicInfo: {
+    population: string;
+    area: string;
+  };
   highlights: string[];
   culturalInfo: {
     language: string;
     currency: string;
     bestTimeToVisit: string;
+    timezone: string;
+    religion: string;
+    foodCulture: string;
     famousFor: string[];
   };
   travelTips: string[];
   learningPoints: string[];
+  recommendedActivities: string[];
 }
 
 interface SimpleCulturalLearningProps {
@@ -91,6 +99,10 @@ const SimpleCulturalLearning: React.FC<SimpleCulturalLearningProps> = ({ onBack 
         city: 'Tokyo',
         country: '일본',
         summary: '도쿄는 일본의 수도이자 세계에서 가장 큰 메트로폴리탄 지역 중 하나입니다. 전통과 현대가 조화롭게 공존하는 도시입니다.',
+        basicInfo: {
+          population: '약 1,400만명',
+          area: '2,194km²'
+        },
         highlights: [
           '세계 최대 규모의 도시권',
           '전통과 현대의 완벽한 조화',
@@ -100,12 +112,20 @@ const SimpleCulturalLearning: React.FC<SimpleCulturalLearningProps> = ({ onBack 
           language: '일본어',
           currency: '엔(¥)',
           bestTimeToVisit: '봄(3-5월), 가을(9-11월)',
+          timezone: 'UTC+9 (한국과 동일)',
+          religion: '신토, 불교',
+          foodCulture: '스시, 라멘, 덴푸라 등 정교한 요리 문화',
           famousFor: ['스시', '라멘', '벚꽃', '아니메']
         },
         travelTips: [
           '교통카드(Suica/Pasmo)를 구매하세요',
           '실내에서는 신발을 벗는 것이 예의입니다',
           '팁 문화가 없으니 팁을 주지 마세요'
+        ],
+        recommendedActivities: [
+          '센소지 절에서 전통 문화 체험하기',
+          '시부야 스크램블 교차로 건너기',
+          '츠키지 시장에서 신선한 스시 맛보기'
         ],
         learningPoints: [
           '일본의 예절 문화 이해하기',
@@ -117,6 +137,10 @@ const SimpleCulturalLearning: React.FC<SimpleCulturalLearningProps> = ({ onBack 
         city: 'Paris',
         country: '프랑스',
         summary: '파리는 예술과 낭만의 도시로, 에펠탑과 루브르 박물관 등 세계적인 명소가 가득합니다.',
+        basicInfo: {
+          population: '약 220만명',
+          area: '105km²'
+        },
         highlights: [
           '세계 예술과 문화의 중심지',
           '미식의 천국',
@@ -126,12 +150,20 @@ const SimpleCulturalLearning: React.FC<SimpleCulturalLearningProps> = ({ onBack 
           language: '프랑스어',
           currency: '유로(€)',
           bestTimeToVisit: '봄(4-6월), 초가을(9-10월)',
+          timezone: 'UTC+1 (한국보다 8시간 늦음)',
+          religion: '가톨릭',
+          foodCulture: '세계 최고 수준의 요리와 와인 문화',
           famousFor: ['에펠탑', '루브르', '크루아상', '와인']
         },
         travelTips: [
           '박물관 패스를 구매하면 줄을 서지 않아도 됩니다',
           '간단한 프랑스어 인사를 하면 더 친절한 대접을 받습니다',
           '일요일에는 많은 상점이 문을 닫습니다'
+        ],
+        recommendedActivities: [
+          '에펠탑에서 야경 감상하기',
+          '루브르 박물관에서 모나리자 보기',
+          '센강에서 유람선 타기'
         ],
         learningPoints: [
           '프랑스 예술사 이해하기',
@@ -145,14 +177,22 @@ const SimpleCulturalLearning: React.FC<SimpleCulturalLearningProps> = ({ onBack 
       city,
       country: '정보 없음',
       summary: `${city}는 매력적인 여행지입니다.`,
+      basicInfo: {
+        population: '정보 없음',
+        area: '정보 없음'
+      },
       highlights: ['역사적 명소', '현지 문화', '맛있는 음식'],
       culturalInfo: {
         language: '현지 언어',
         currency: '현지 통화',
         bestTimeToVisit: '봄, 가을',
+        timezone: '정보 없음',
+        religion: '다양한 종교',
+        foodCulture: '현지 특색 음식',
         famousFor: ['관광 명소', '전통 음식', '문화 체험']
       },
       travelTips: ['현지 문화를 존중하세요', '기본 인사말을 배우세요', '교통 패스를 활용하세요'],
+      recommendedActivities: ['가족 친화적 활동', '문화 체험', '교육적 견학'],
       learningPoints: ['현지 역사 이해하기', '전통 문화 체험하기', '언어 기초 배우기']
     };
   };
@@ -236,10 +276,11 @@ const SimpleCulturalLearning: React.FC<SimpleCulturalLearningProps> = ({ onBack 
 
             {/* 탭 콘텐츠 */}
             <Tabs defaultValue="highlights" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
+              <TabsList className="grid w-full grid-cols-5">
                 <TabsTrigger value="highlights">하이라이트</TabsTrigger>
                 <TabsTrigger value="culture">문화 정보</TabsTrigger>
                 <TabsTrigger value="tips">여행 팁</TabsTrigger>
+                <TabsTrigger value="activities">추천 활동</TabsTrigger>
                 <TabsTrigger value="learning">학습 포인트</TabsTrigger>
               </TabsList>
 
@@ -255,25 +296,52 @@ const SimpleCulturalLearning: React.FC<SimpleCulturalLearningProps> = ({ onBack 
               </TabsContent>
 
               <TabsContent value="culture" className="mt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="font-semibold mb-1">언어</p>
-                    <p className="text-gray-600">{searchResult.culturalInfo.language}</p>
+                <div className="space-y-4">
+                  {/* 기본 정보 섹션 */}
+                  <div className="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-lg">
+                    <div>
+                      <p className="font-semibold mb-1 text-blue-800">인구</p>
+                      <p className="text-blue-700">{searchResult.basicInfo.population}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-1 text-blue-800">면적</p>
+                      <p className="text-blue-700">{searchResult.basicInfo.area}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold mb-1">화폐</p>
-                    <p className="text-gray-600">{searchResult.culturalInfo.currency}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="font-semibold mb-1">최적 여행 시기</p>
-                    <p className="text-gray-600">{searchResult.culturalInfo.bestTimeToVisit}</p>
-                  </div>
-                  <div className="col-span-2">
-                    <p className="font-semibold mb-2">유명한 것들</p>
-                    <div className="flex flex-wrap gap-2">
-                      {searchResult.culturalInfo.famousFor.map((item, index) => (
-                        <Badge key={index} variant="outline">{item}</Badge>
-                      ))}
+
+                  {/* 문화 정보 섹션 */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-semibold mb-1">언어</p>
+                      <p className="text-gray-600">{searchResult.culturalInfo.language}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-1">화폐</p>
+                      <p className="text-gray-600">{searchResult.culturalInfo.currency}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-1">시차</p>
+                      <p className="text-gray-600">{searchResult.culturalInfo.timezone}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold mb-1">종교</p>
+                      <p className="text-gray-600">{searchResult.culturalInfo.religion}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="font-semibold mb-1">최적 여행 시기</p>
+                      <p className="text-gray-600">{searchResult.culturalInfo.bestTimeToVisit}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="font-semibold mb-1">음식 문화</p>
+                      <p className="text-gray-600">{searchResult.culturalInfo.foodCulture}</p>
+                    </div>
+                    <div className="col-span-2">
+                      <p className="font-semibold mb-2">유명한 것들</p>
+                      <div className="flex flex-wrap gap-2">
+                        {searchResult.culturalInfo.famousFor.map((item, index) => (
+                          <Badge key={index} variant="outline">{item}</Badge>
+                        ))}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -285,6 +353,17 @@ const SimpleCulturalLearning: React.FC<SimpleCulturalLearningProps> = ({ onBack 
                     <div key={index} className="flex items-start gap-2">
                       <Lightbulb className="w-5 h-5 text-yellow-500 mt-0.5" />
                       <p>{tip}</p>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="activities" className="mt-4">
+                <div className="space-y-3">
+                  {searchResult.recommendedActivities.map((activity, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <Globe className="w-5 h-5 text-purple-500 mt-0.5" />
+                      <p>{activity}</p>
                     </div>
                   ))}
                 </div>
