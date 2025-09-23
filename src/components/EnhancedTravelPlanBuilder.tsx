@@ -15,6 +15,9 @@ import { CustomActivityModal } from './CustomActivityModal';
 import { DestinationInfoCard } from './DestinationInfoCard';
 import CommunityGallery from './CommunityGallery';
 import CulturalLearningCard from './CulturalLearningCard';
+import { saveTravelPlan } from '@/services/firebaseService';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 interface EnhancedTravelPlanBuilderProps {
   selectedCities: City[];
@@ -62,8 +65,10 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
   onNext,
   onBack
 }) => {
+  const { user } = useAuth();
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   
   // 기본 여행 정보
   const [tripInfo, setTripInfo] = useState({
@@ -1183,13 +1188,42 @@ const EnhancedTravelPlanBuilder: React.FC<EnhancedTravelPlanBuilderProps> = ({
             이전
           </Button>
           <Button 
-            onClick={() => {
-              onPlanUpdate(finalPlan);
-              onNext();
+            onClick={async () => {
+              setSaving(true);
+              try {
+                // 여행 계획 데이터 Firebase에 저장
+                const planToSave = {
+                  ...finalPlan,
+                  createdBy: user?.uid || 'anonymous',
+                  createdAt: new Date().toISOString(),
+                  status: 'published' as const,
+                  isPublic: true,
+                };
+                
+                const savedPlanId = await saveTravelPlan(planToSave);
+                
+                toast({
+                  title: "여행 계획 저장 완료! ✅",
+                  description: "커뮤니티에서 다른 학생들과 공유됩니다.",
+                });
+                
+                onPlanUpdate({...finalPlan, id: savedPlanId});
+                onNext();
+              } catch (error) {
+                console.error('Error saving travel plan:', error);
+                toast({
+                  title: "저장 실패 ❌",
+                  description: "다시 시도해주세요.",
+                  variant: "destructive",
+                });
+              } finally {
+                setSaving(false);
+              }
             }}
-            className="bg-green-600 hover:bg-green-700"
+            disabled={saving}
+            className="bg-green-600 hover:bg-green-700 disabled:opacity-50"
           >
-            여행 계획 완료! 🎉
+            {saving ? '저장 중...' : '여행 계획 완료! 🎉'}
           </Button>
         </div>
       </div>

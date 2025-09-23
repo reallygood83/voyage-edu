@@ -11,6 +11,7 @@ import { Search, Filter, TrendingUp, Heart, Eye, Calendar, Plus, Upload } from '
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { getSharedTravelPlans, getPopularTravelPlans } from '@/services/firebaseService'
 
 interface CommunityPlan extends TravelPlan {
   id: string
@@ -39,107 +40,53 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
   const [showDetailView, setShowDetailView] = useState(false)
   const [isUploadDialogOpen, setIsUploadDialogOpen] = useState(false)
 
-  // 샘플 커뮤니티 데이터
+  // Firebase에서 커뮤니티 데이터 로드
   useEffect(() => {
-    const samplePlans: CommunityPlan[] = [
-      {
-        id: '1',
-        title: '서울→부산→제주 가족 여행',
-        cities: ['서울', '부산', '제주'],
-        startDate: '2024-03-15',
-        endDate: '2024-03-20',
-        totalBudget: 850000,
-        author: '여행러버123',
-        likes: 45,
-        views: 230,
-        isLiked: false,
-        rating: 4.8,
-        createdAt: '2024-02-20',
-        tags: ['가족여행', '맛집투어', '문화체험']
-      },
-      {
-        id: '2', 
-        title: '경주→안동→포항 역사 탐방',
-        cities: ['경주', '안동', '포항'],
-        startDate: '2024-04-10',
-        endDate: '2024-04-12',
-        totalBudget: 420000,
-        author: '역사탐험가',
-        likes: 32,
-        views: 156,
-        isLiked: true,
-        rating: 4.6,
-        createdAt: '2024-02-18',
-        tags: ['역사여행', '문화재', '전통체험']
-      },
-      {
-        id: '3',
-        title: '강릉→속초→양양 바다 힐링',
-        cities: ['강릉', '속초', '양양'],
-        startDate: '2024-05-01',
-        endDate: '2024-05-03',
-        totalBudget: 380000,
-        author: '바다사랑',
-        likes: 67,
-        views: 298,
-        isLiked: false,
-        rating: 4.9,
-        createdAt: '2024-02-15',
-        tags: ['바다여행', '힐링', '자연체험']
-      },
-      {
-        id: '4',
-        title: '전주→군산→익산 전통 체험',
-        cities: ['전주', '군산', '익산'],
-        startDate: '2024-04-20',
-        endDate: '2024-04-22',
-        totalBudget: 310000,
-        author: '한옥마니아',
-        likes: 28,
-        views: 134,
-        isLiked: false,
-        rating: 4.4,
-        createdAt: '2024-02-12',
-        tags: ['전통여행', '한옥체험', '맛집']
-      },
-      {
-        id: '5',
-        title: '춘천→가평→양평 당일 드라이브',
-        cities: ['춘천', '가평', '양평'],
-        startDate: '2024-03-25',
-        endDate: '2024-03-26',
-        totalBudget: 180000,
-        author: '춘천닭갈비',
-        likes: 19,
-        views: 89,
-        isLiked: false,
-        rating: 4.2,
-        createdAt: '2024-02-10',
-        tags: ['당일여행', '드라이브', '맛집투어']
-      }
-    ]
+    const loadCommunityPlans = async () => {
+      setLoading(true)
+      try {
+        const sharedPlans = await getSharedTravelPlans(20)
+        
+        // TravelPlan을 CommunityPlan으로 변환
+        const communityPlans: CommunityPlan[] = sharedPlans.map((plan, index) => ({
+          ...plan,
+          author: '학생' + (index + 1), // 익명화된 작성자명
+          likes: Math.floor(Math.random() * 50) + 1, // 임시 좋아요 수
+          views: Math.floor(Math.random() * 200) + 10, // 임시 조회수
+          isLiked: false,
+          rating: 4.0 + Math.random() * 1.0, // 4.0-5.0 랜덤 평점
+          tags: plan.cities || [] // 도시명을 태그로 사용
+        }))
 
-    // 사용자 계획이 있으면 추가
-    if (userPlan) {
-      const userCommunityPlan: CommunityPlan = {
-        ...userPlan,
-        id: 'user-plan',
-        author: '나의 여행계획',
-        likes: 0,
-        views: 1,
-        isLiked: false,
-        rating: 5.0,
-        createdAt: new Date().toISOString(),
-        tags: ['나의계획', '새로운여행']
+        // 사용자 계획이 있으면 맨 앞에 추가
+        if (userPlan) {
+          const userCommunityPlan: CommunityPlan = {
+            ...userPlan,
+            id: 'user-plan',
+            author: '나의 여행계획',
+            likes: 0,
+            views: 1,
+            isLiked: false,
+            rating: 5.0,
+            createdAt: new Date().toISOString(),
+            tags: ['나의계획', ...(userPlan.cities || [])]
+          }
+          communityPlans.unshift(userCommunityPlan)
+        }
+
+        setPlans(communityPlans)
+        setFilteredPlans(communityPlans)
+      } catch (error) {
+        console.error('Error loading community plans:', error)
+        // 에러 시 빈 배열로 설정
+        setPlans([])
+        setFilteredPlans([])
+      } finally {
+        setLoading(false)
       }
-      samplePlans.unshift(userCommunityPlan)
     }
 
-    setTimeout(() => {
-      setPlans(samplePlans)
-      setFilteredPlans(samplePlans)
-      setLoading(false)
-    }, 1000)
+    loadCommunityPlans()
   }, [userPlan])
 
   // 필터링 및 정렬
