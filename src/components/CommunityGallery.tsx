@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { TravelPlan } from '@/types'
 import TravelPlanCard from './TravelPlanCard'
 import TravelPlanDetailView from './TravelPlanDetailView'
@@ -11,7 +12,7 @@ import { Search, Filter, TrendingUp, Heart, Eye, Calendar, Plus, Upload } from '
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { getSharedTravelPlans, getPopularTravelPlans } from '@/services/firebaseService'
+import { getSharedTravelPlans, getPopularTravelPlans, toggleLikeTravelPlan, incrementViewCount } from '@/services/firebaseService'
 
 interface CommunityPlan extends TravelPlan {
   id: string
@@ -30,6 +31,9 @@ interface CommunityGalleryProps {
 }
 
 export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGalleryProps) {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  
   const [plans, setPlans] = useState<CommunityPlan[]>([])
   const [filteredPlans, setFilteredPlans] = useState<CommunityPlan[]>([])
   const [searchTerm, setSearchTerm] = useState('')
@@ -51,10 +55,10 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
         const communityPlans: CommunityPlan[] = sharedPlans.map((plan, index) => ({
           ...plan,
           author: '학생' + (index + 1), // 익명화된 작성자명
-          likes: Math.floor(Math.random() * 50) + 1, // 임시 좋아요 수
-          views: Math.floor(Math.random() * 200) + 10, // 임시 조회수
-          isLiked: false,
-          rating: 4.0 + Math.random() * 1.0, // 4.0-5.0 랜덤 평점
+          likes: (plan as any).likesCount || 0, // 실제 좋아요 수 사용
+          views: (plan as any).viewsCount || 1, // 실제 조회수 사용
+          isLiked: false, // TODO: 로그인 시 실제 좋아요 상태 확인
+          rating: (plan as any).rating || (4.0 + Math.random() * 1.0), // 실제 평점 또는 기본값
           tags: plan.cities || [] // 도시명을 태그로 사용
         }))
 
@@ -88,6 +92,21 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
 
     loadCommunityPlans()
   }, [userPlan])
+
+  // URL 파라미터 기반 상세보기 상태 관리
+  useEffect(() => {
+    const planId = searchParams.get('planId')
+    if (planId && plans.length > 0) {
+      const plan = plans.find(p => p.id === planId)
+      if (plan) {
+        setSelectedPlan(plan)
+        setShowDetailView(true)
+      }
+    } else {
+      setShowDetailView(false)
+      setSelectedPlan(null)
+    }
+  }, [searchParams, plans])
 
   // 필터링 및 정렬
   useEffect(() => {
@@ -127,12 +146,36 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
     setFilteredPlans(filtered)
   }, [plans, searchTerm, sortBy, filterTag])
 
-  const handleLike = (planId: string) => {
-    setPlans(prev => prev.map(plan => 
-      plan.id === planId 
-        ? { ...plan, isLiked: !plan.isLiked, likes: plan.isLiked ? plan.likes - 1 : plan.likes + 1 }
-        : plan
-    ))
+  const handleLike = async (planId: string) => {
+    try {
+      // 임시 사용자 ID (실제로는 인증된 사용자 ID를 사용해야 함)
+      const userId = 'anonymous-user-' + Date.now()
+      
+      if (planId !== 'user-plan') {
+        const newLikesCount = await toggleLikeTravelPlan(planId, userId)
+        
+        setPlans(prev => prev.map(plan => 
+          plan.id === planId 
+            ? { ...plan, isLiked: !plan.isLiked, likes: newLikesCount }
+            : plan
+        ))
+      } else {
+        // 사용자 자신의 계획은 로컬 상태만 업데이트
+        setPlans(prev => prev.map(plan => 
+          plan.id === planId 
+            ? { ...plan, isLiked: !plan.isLiked, likes: plan.isLiked ? plan.likes - 1 : plan.likes + 1 }
+            : plan
+        ))
+      }
+    } catch (error) {
+      console.error('Error handling like:', error)
+      // 에러 시 로컬 상태만 업데이트
+      setPlans(prev => prev.map(plan => 
+        plan.id === planId 
+          ? { ...plan, isLiked: !plan.isLiked, likes: plan.isLiked ? plan.likes - 1 : plan.likes + 1 }
+          : plan
+      ))
+    }
   }
 
   const handleShare = async (planId: string) => {
@@ -152,13 +195,35 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
     }
   }
 
-  const handleView = (planId: string) => {
+  const handleView = async (planId: string) => {
     const plan = plans.find(p => p.id === planId)
     if (plan) {
-      // 조회수 증가
-      setPlans(prev => prev.map(p => 
-        p.id === planId ? { ...p, views: p.views + 1 } : p
-      ))
+      try {
+        // Firebase 조회수 증가 (사용자 계획이 아닌 경우)
+        if (planId !== 'user-plan') {
+          const newViewCount = await incrementViewCount(planId)
+          
+          setPlans(prev => prev.map(p => 
+            p.id === planId ? { ...p, views: newViewCount } : p
+          ))
+        } else {
+          // 사용자 자신의 계획은 로컬 상태만 업데이트
+          setPlans(prev => prev.map(p => 
+            p.id === planId ? { ...p, views: p.views + 1 } : p
+          ))
+        }
+      } catch (error) {
+        console.error('Error incrementing view count:', error)
+        // 에러 시 로컬 상태만 업데이트
+        setPlans(prev => prev.map(p => 
+          p.id === planId ? { ...p, views: p.views + 1 } : p
+        ))
+      }
+      
+      // URL에 상세보기 상태 추가
+      const params = new URLSearchParams(searchParams.toString())
+      params.set('planId', planId)
+      router.push(`?${params.toString()}`)
       
       // 상세보기 모드로 전환
       setSelectedPlan(plan)
@@ -171,6 +236,12 @@ export default function CommunityGallery({ userPlan, onPlanSelect }: CommunityGa
   }
 
   const handleBackToList = () => {
+    // URL에서 planId 파라미터 제거하여 커뮤니티 목록으로 돌아가기
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('planId')
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
+    router.push(newUrl)
+    
     setShowDetailView(false)
     setSelectedPlan(null)
   }

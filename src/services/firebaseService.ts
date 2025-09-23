@@ -29,6 +29,10 @@ export const saveTravelPlan = async (travelPlan: Partial<TravelPlan>) => {
       updatedAt: serverTimestamp(),
       status: travelPlan.status || 'draft',
       isPublic: true, // 커뮤니티 공유를 위해 기본값 true
+      likes: [], // 좋아요한 사용자 ID 배열
+      likesCount: 0, // 좋아요 수
+      viewsCount: 0, // 조회수
+      rating: 4.5, // 기본 평점
     };
 
     const docRef = await addDoc(collection(db, COLLECTION_NAME), planData);
@@ -228,5 +232,29 @@ export const getPopularTravelPlans = async (limitCount: number = 10) => {
   } catch (error) {
     console.error('Error getting popular travel plans: ', error);
     return []; // 에러 시 빈 배열 반환
+  }
+};
+
+// 여행 계획 조회수 증가
+export const incrementViewCount = async (planId: string) => {
+  try {
+    const docRef = doc(db, COLLECTION_NAME, planId);
+    const docSnap = await getDoc(docRef);
+    
+    if (docSnap.exists()) {
+      const data = docSnap.data();
+      const currentViews = data.viewsCount || 0;
+      
+      await updateDoc(docRef, {
+        viewsCount: currentViews + 1,
+        updatedAt: serverTimestamp(),
+      });
+      
+      return currentViews + 1;
+    }
+    return 0;
+  } catch (error) {
+    console.error('Error incrementing view count: ', error);
+    throw error;
   }
 };
