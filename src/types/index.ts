@@ -12,11 +12,14 @@ export interface City {
   nameKo: string;
   country: string;
   countryCode: string;
-  latitude: number;
-  longitude: number;
+  latitude?: number;
+  longitude?: number;
+  coordinates?: { lat: number; lng: number }; // 호환성을 위한 대체 좌표 형식
   population?: number;
   timezone?: string;
   iataCode?: string; // 공항 코드
+  description?: string; // 도시 설명
+  isCustom?: boolean; // 사용자가 추가한 커스텀 도시 여부
 }
 
 export interface Flight {

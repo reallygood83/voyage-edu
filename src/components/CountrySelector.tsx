@@ -29,6 +29,11 @@ const CountrySelector = ({
   const [showModal, setShowModal] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const modalSearchRef = useRef<HTMLInputElement>(null);
+  
+  // 도시 추가 기능을 위한 state
+  const [showAddCityForm, setShowAddCityForm] = useState(false);
+  const [newCityName, setNewCityName] = useState('');
+  const [customCities, setCustomCities] = useState<City[]>([]);
 
   // 모달이 열릴 때 검색창에 포커스
   useEffect(() => {
@@ -91,13 +96,61 @@ const CountrySelector = ({
     }
   };
 
+  // 도시 추가 기능
+  const handleAddCity = () => {
+    if (!newCityName.trim() || !selectedCountry) return;
+    
+    // 중복 체크 (기본 도시와 커스텀 도시 모두 확인)
+    const allCities = [
+      ...getCitiesForCountry(selectedCountry.code),
+      ...customCities.filter(city => city.countryCode === selectedCountry.code)
+    ];
+    
+    const isDuplicate = allCities.some(
+      city => city.nameKo.toLowerCase() === newCityName.trim().toLowerCase() ||
+              city.name.toLowerCase() === newCityName.trim().toLowerCase()
+    );
+    
+    if (isDuplicate) {
+      alert('이미 추가된 도시입니다!');
+      return;
+    }
+    
+    // 새 도시 생성
+    const newCity: City = {
+      id: `custom-${Date.now()}`,
+      name: newCityName.trim(),
+      nameKo: newCityName.trim(),
+      country: selectedCountry.nameKo,
+      countryCode: selectedCountry.code,
+      description: `${selectedCountry.nameKo}의 아름다운 도시`,
+      coordinates: { lat: 0, lng: 0 }, // 기본값
+      isCustom: true // 커스텀 도시 표시
+    };
+    
+    // 커스텀 도시 목록에 추가
+    setCustomCities(prev => [...prev, newCity]);
+    
+    // 폼 초기화
+    setNewCityName('');
+    setShowAddCityForm(false);
+    
+    // 바로 선택하기
+    onCitiesSelect([...selectedCities, newCity]);
+  };
+
   const getCitiesForCountry = (countryCode: string): City[] => {
     const cities = MAJOR_CITIES[countryCode as keyof typeof MAJOR_CITIES] || [];
-    return cities.map(city => ({
+    const baseCities = cities.map(city => ({
       ...city,
       country: COUNTRIES.find(c => c.code === countryCode)?.nameKo || '',
       countryCode,
     }));
+    
+    // 해당 국가의 커스텀 도시들 추가
+    const countryCities = customCities.filter(city => city.countryCode === countryCode);
+    
+    return [...baseCities, ...countryCities];
   };
 
   return (
@@ -212,6 +265,72 @@ const CountrySelector = ({
             </p>
           </CardHeader>
           <CardContent>
+            {/* 도시 추가 버튼 */}
+            <div className="mb-6">
+              {!showAddCityForm ? (
+                <Button
+                  onClick={() => setShowAddCityForm(true)}
+                  variant="outline"
+                  size="lg"
+                  className="w-full h-16 text-xl border-3 border-green-300 hover:border-green-500 bg-green-50 hover:bg-green-100 text-green-700 hover:text-green-800"
+                >
+                  <span className="text-2xl mr-3">➕</span>
+                  원하는 도시를 직접 추가해보세요!
+                  <span className="text-2xl ml-3">🏙️</span>
+                </Button>
+              ) : (
+                <Card className="bg-gradient-to-r from-green-50 to-blue-50 border-3 border-green-300">
+                  <CardContent className="p-6">
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-2xl">🏙️</span>
+                          <h4 className="text-lg font-bold text-gray-800">
+                            {selectedCountry.nameKo}에 도시 추가하기
+                          </h4>
+                        </div>
+                        <Input
+                          type="text"
+                          placeholder="도시명을 입력하세요 (예: 파리, 런던, 뉴욕)"
+                          value={newCityName}
+                          onChange={(e) => setNewCityName(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && handleAddCity()}
+                          className="h-12 text-lg border-2 border-green-300 focus:border-green-500"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          onClick={handleAddCity}
+                          disabled={!newCityName.trim()}
+                          size="lg"
+                          className="h-12 px-6 bg-green-500 hover:bg-green-600 text-white"
+                        >
+                          <span className="mr-1">✅</span>
+                          추가
+                        </Button>
+                        <Button
+                          onClick={() => {
+                            setShowAddCityForm(false);
+                            setNewCityName('');
+                          }}
+                          variant="outline"
+                          size="lg"
+                          className="h-12 px-6 border-2 border-gray-300 hover:border-gray-500"
+                        >
+                          <span className="mr-1">❌</span>
+                          취소
+                        </Button>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-3">
+                      💡 팁: 가고 싶은 도시가 목록에 없다면 직접 추가해보세요!
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* 기존 도시 목록 */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {getCitiesForCountry(selectedCountry.code).map((city) => (
                 <CityCard
@@ -223,7 +342,7 @@ const CountrySelector = ({
               ))}
             </div>
 
-            {getCitiesForCountry(selectedCountry.code).length === 0 && (
+            {getCitiesForCountry(selectedCountry.code).length === 0 && !showAddCityForm && (
               <Card className="bg-yellow-50 border-2 border-yellow-300">
                 <CardContent className="text-center py-8">
                   <div className="text-4xl mb-4">🚧</div>
@@ -231,7 +350,7 @@ const CountrySelector = ({
                     이 국가의 도시 정보를 준비 중입니다.
                   </p>
                   <p className="text-yellow-600 mt-2">
-                    다른 국가를 선택해주세요!
+                    위의 "도시 추가" 버튼으로 원하는 도시를 직접 추가해보세요!
                   </p>
                 </CardContent>
               </Card>

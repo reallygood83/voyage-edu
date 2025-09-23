@@ -90,16 +90,45 @@ const CityCard = ({ city, isSelected, onToggle }: CityCardProps) => {
             </div>
           </div>
 
-          {/* 위치 정보 */}
-          <Badge 
-            variant={isSelected ? "secondary" : "outline"}
-            className={cn(
-              "text-xs",
-              isSelected ? "bg-white/20 text-white border-white/30" : ""
+          {/* 위치 정보 또는 커스텀 표시 */}
+          <div className="flex gap-2 flex-wrap">
+            {city.isCustom ? (
+              <Badge 
+                variant="outline"
+                className={cn(
+                  "text-xs",
+                  isSelected 
+                    ? "bg-yellow-400 text-yellow-900 border-yellow-300" 
+                    : "bg-yellow-100 text-yellow-800 border-yellow-400"
+                )}
+              >
+                ⭐ 내가 추가한 도시
+              </Badge>
+            ) : (
+              <Badge 
+                variant={isSelected ? "secondary" : "outline"}
+                className={cn(
+                  "text-xs",
+                  isSelected ? "bg-white/20 text-white border-white/30" : ""
+                )}
+              >
+                📍 {city.latitude?.toFixed(1) || 0}°N, {city.longitude?.toFixed(1) || 0}°E
+              </Badge>
             )}
-          >
-            📍 {city.latitude.toFixed(1)}°N, {city.longitude.toFixed(1)}°E
-          </Badge>
+            
+            {city.description && (
+              <Badge 
+                variant="outline"
+                className={cn(
+                  "text-xs max-w-32 truncate",
+                  isSelected ? "bg-white/20 text-white border-white/30" : "text-gray-600"
+                )}
+                title={city.description}
+              >
+                📝 {city.description}
+              </Badge>
+            )}
+          </div>
 
           {/* 선택 상태 메시지 */}
           {isSelected && (

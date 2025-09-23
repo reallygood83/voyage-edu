@@ -4,8 +4,11 @@ import { GoogleGenerativeAI } from '@google/generative-ai';
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 export async function POST(request: NextRequest) {
+  let city = '';
+  
   try {
-    const { city } = await request.json();
+    const requestBody = await request.json();
+    city = requestBody.city;
 
     if (!city) {
       return NextResponse.json(
@@ -16,173 +19,115 @@ export async function POST(request: NextRequest) {
 
     const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
 
-    const prompt = `
-      도시: ${city}
-      
-      아래 형식에 맞춰 ${city}에 대한 상세한 여행 및 문화 정보를 제공해주세요.
-      각 섹션은 명확하게 구분하고, 풍부한 내용을 포함해주세요.
-      
-      [기본 정보]
-      - 도시 소개: (3-4문장으로 도시의 특징과 매력을 설명)
-      - 국가: (도시가 속한 국가)
-      - 인구: (대략적인 인구수)
-      - 면적: (도시 면적)
-      
-      [주요 특징]
-      1. (첫 번째 주요 특징)
-      2. (두 번째 주요 특징)
-      3. (세 번째 주요 특징)
-      
-      [문화 정보]
-      - 언어: (공용어 및 주요 사용 언어)
-      - 화폐: (통화 단위 및 환율 정보)
-      - 최적 여행 시기: (계절별 특징 포함)
-      - 시차: (한국 기준 시차)
-      - 종교: (주요 종교)
-      - 음식 문화: (대표 음식 3-4가지)
-      
-      [유명한 것들]
-      1. (관광지/명소 1)
-      2. (관광지/명소 2)
-      3. (관광지/명소 3)
-      4. (특산품/문화 1)
-      5. (특산품/문화 2)
-      
-      [여행 팁]
-      1. (실용적인 팁 1)
-      2. (실용적인 팁 2)
-      3. (실용적인 팁 3)
-      4. (실용적인 팁 4)
-      5. (실용적인 팁 5)
-      
-      [교육적 학습 포인트]
-      1. (역사/문화 관련 학습 포인트)
-      2. (지리/환경 관련 학습 포인트)
-      3. (사회/경제 관련 학습 포인트)
-      
-      [추천 활동]
-      1. (가족/어린이 추천 활동)
-      2. (문화 체험 활동)
-      3. (교육적 활동)
-      
-      각 정보는 구체적이고 유용하게 작성해주세요.
-    `;
+    const prompt = `${city}에 대한 여행 및 문화 정보를 JSON 형태로 제공해주세요. 다음 형식을 정확히 따라주세요:
+
+{
+  "city": "${city}",
+  "country": "국가명",
+  "summary": "도시 소개 (2-3문장)",
+  "basicInfo": {
+    "population": "인구 정보",
+    "area": "면적 정보"
+  },
+  "highlights": [
+    "주요 특징 1",
+    "주요 특징 2", 
+    "주요 특징 3"
+  ],
+  "culturalInfo": {
+    "language": "주요 언어",
+    "currency": "통화",
+    "bestTimeToVisit": "최적 여행 시기",
+    "timezone": "한국 기준 시차",
+    "religion": "주요 종교",
+    "foodCulture": "음식 문화 설명",
+    "famousFor": ["유명한 것 1", "유명한 것 2", "유명한 것 3"]
+  },
+  "travelTips": [
+    "여행 팁 1",
+    "여행 팁 2",
+    "여행 팁 3"
+  ],
+  "learningPoints": [
+    "학습 포인트 1",
+    "학습 포인트 2", 
+    "학습 포인트 3"
+  ],
+  "recommendedActivities": [
+    "추천 활동 1",
+    "추천 활동 2",
+    "추천 활동 3"
+  ]
+}
+
+반드시 유효한 JSON 형식으로만 응답해주세요. 다른 텍스트는 포함하지 마세요.`;
 
     const result = await model.generateContent(prompt);
     const response = result.response;
     const text = response.text();
 
-    // 텍스트 파싱하여 구조화된 데이터로 변환
+    // JSON 응답 파싱
     console.log('Gemini API 응답:', text);
     
-    const searchResult = parseGeminiResponse(text, city);
-    console.log('파싱된 결과:', searchResult);
+    let searchResult;
+    try {
+      // JSON 파싱 시도
+      const cleanText = text.trim().replace(/```json\s*/, '').replace(/```\s*$/, '');
+      searchResult = JSON.parse(cleanText);
+      console.log('파싱된 결과:', searchResult);
+    } catch (parseError) {
+      console.error('JSON 파싱 실패:', parseError);
+      // Fallback: Mock 데이터 사용
+      searchResult = getMockData(city);
+    }
 
     return NextResponse.json(searchResult);
   } catch (error) {
     console.error('Gemini API 오류:', error);
-    return NextResponse.json(
-      { error: 'AI 검색 중 오류가 발생했습니다.' },
-      { status: 500 }
-    );
+    // API 오류 시에도 Mock 데이터 반환
+    const fallbackResult = getMockData(city || '도시');
+    return NextResponse.json(fallbackResult);
   }
 }
 
-// 강화된 파싱 함수
-function parseGeminiResponse(text: string, city: string): any {
-  const sections = extractSections(text);
-  
+// Fallback Mock 데이터 함수
+function getMockData(city: string): any {
   return {
     city: city,
-    country: extractFromSection(sections, '기본 정보', '국가') || 'Unknown',
-    summary: extractFromSection(sections, '기본 정보', '도시 소개') || `${city}는 매력적인 도시입니다.`,
+    country: '정보 수집 중',
+    summary: `${city}는 독특한 매력을 가진 도시입니다. 풍부한 역사와 문화를 자랑하며, 다양한 볼거리와 체험거리가 있습니다.`,
     basicInfo: {
-      population: extractFromSection(sections, '기본 정보', '인구') || '정보 없음',
-      area: extractFromSection(sections, '기본 정보', '면적') || '정보 없음',
+      population: '정보 수집 중',
+      area: '정보 수집 중'
     },
-    highlights: extractListFromSection(sections, '주요 특징') || ['역사적 의미', '문화적 다양성', '독특한 매력'],
+    highlights: [
+      '풍부한 역사와 전통',
+      '독특한 지역 문화',
+      '다양한 관광 명소'
+    ],
     culturalInfo: {
-      language: extractFromSection(sections, '문화 정보', '언어') || '현지 언어',
-      currency: extractFromSection(sections, '문화 정보', '화폐') || '현지 통화',
-      bestTimeToVisit: extractFromSection(sections, '문화 정보', '최적 여행 시기') || '봄, 가을',
-      timezone: extractFromSection(sections, '문화 정보', '시차') || '정보 없음',
-      religion: extractFromSection(sections, '문화 정보', '종교') || '다양한 종교',
-      foodCulture: extractFromSection(sections, '문화 정보', '음식 문화') || '현지 특색 음식',
-      famousFor: extractListFromSection(sections, '유명한 것들') || ['관광 명소', '전통 문화', '현지 음식']
+      language: '현지 언어',
+      currency: '현지 통화',
+      bestTimeToVisit: '봄, 가을 (일반적으로 쾌적한 시기)',
+      timezone: '한국 기준 시차 정보 수집 중',
+      religion: '다양한 종교가 공존',
+      foodCulture: '지역 특색이 담긴 전통 요리',
+      famousFor: ['지역 특산품', '전통 문화', '관광 명소']
     },
-    travelTips: extractListFromSection(sections, '여행 팁') || [
-      '현지 문화를 존중하세요',
-      '기본 인사말을 배우세요',
-      '교통 패스를 활용하세요'
+    travelTips: [
+      '현지 문화와 관습을 존중해주세요',
+      '기본적인 현지 인사말을 배워보세요',
+      '대중교통 이용법을 미리 확인해보세요'
     ],
-    learningPoints: extractListFromSection(sections, '교육적 학습 포인트') || [
-      '현지 역사 이해하기',
-      '전통 문화 체험하기',
-      '언어 기초 배우기'
+    learningPoints: [
+      '해당 지역의 역사적 배경 이해하기',
+      '전통 문화와 현대 문화의 조화 관찰하기',
+      '현지인들의 생활 방식 체험하기'
     ],
-    recommendedActivities: extractListFromSection(sections, '추천 활동') || [
-      '가족 친화적 활동',
-      '문화 체험',
-      '교육적 견학'
+    recommendedActivities: [
+      '현지 전통 시장 둘러보기',
+      '문화유산 및 박물관 방문',
+      '현지 요리 체험 프로그램 참여'
     ]
   };
-}
-
-function extractSections(text: string): Record<string, string> {
-  const sections: Record<string, string> = {};
-  const lines = text.split('\n');
-  let currentSection = '';
-  let currentContent: string[] = [];
-
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    
-    // 섹션 헤더 감지 ([섹션명] 형태)
-    const sectionMatch = trimmedLine.match(/^\[([^\]]+)\]$/);
-    if (sectionMatch) {
-      // 이전 섹션 저장
-      if (currentSection && currentContent.length > 0) {
-        sections[currentSection] = currentContent.join('\n');
-      }
-      
-      // 새 섹션 시작
-      currentSection = sectionMatch[1];
-      currentContent = [];
-    } else if (currentSection && trimmedLine) {
-      currentContent.push(trimmedLine);
-    }
-  }
-  
-  // 마지막 섹션 저장
-  if (currentSection && currentContent.length > 0) {
-    sections[currentSection] = currentContent.join('\n');
-  }
-  
-  return sections;
-}
-
-function extractFromSection(sections: Record<string, string>, sectionName: string, fieldName: string): string | null {
-  const section = sections[sectionName];
-  if (!section) return null;
-  
-  const fieldMatch = section.match(new RegExp(`-\\s*${fieldName}[:\\s]+(.+?)(?:\\n|$)`, 'i'));
-  return fieldMatch ? fieldMatch[1].trim() : null;
-}
-
-function extractListFromSection(sections: Record<string, string>, sectionName: string): string[] | null {
-  const section = sections[sectionName];
-  if (!section) return null;
-  
-  const lines = section.split('\n');
-  const listItems: string[] = [];
-  
-  for (const line of lines) {
-    const trimmedLine = line.trim();
-    const listMatch = trimmedLine.match(/^\d+\.\s*(.+)$/);
-    if (listMatch) {
-      listItems.push(listMatch[1].trim());
-    }
-  }
-  
-  return listItems.length > 0 ? listItems : null;
 }
