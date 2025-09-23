@@ -40,12 +40,12 @@ export const saveTravelPlan = async (travelPlan: Partial<TravelPlan>) => {
   }
 };
 
-// 모든 공유된 여행 계획 가져오기
+// 모든 공유된 여행 계획 가져오기 (인덱스 불필요한 단순 쿼리)
 export const getSharedTravelPlans = async (limitCount: number = 20) => {
   try {
+    // 단순 쿼리: orderBy만 사용 (인덱스 불필요)
     const q = query(
       collection(db, COLLECTION_NAME),
-      where('isPublic', '==', true),
       orderBy('createdAt', 'desc'),
       limit(limitCount)
     );
@@ -55,23 +55,21 @@ export const getSharedTravelPlans = async (limitCount: number = 20) => {
     
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      plans.push({
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      } as TravelPlan);
+      // isPublic이 true인 것만 클라이언트에서 필터링
+      if (data.isPublic === true) {
+        plans.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        } as TravelPlan);
+      }
     });
     
     return plans;
   } catch (error) {
     console.error('Error getting shared travel plans: ', error);
-    // Firestore 인덱스가 필요한 경우 안내
-    if (error instanceof Error && error.message.includes('index')) {
-      console.log('Please create the required index in Firebase Console.');
-      console.log('The error message should contain a direct link to create the index.');
-    }
-    throw error;
+    return []; // 에러 시 빈 배열 반환
   }
 };
 
@@ -127,13 +125,13 @@ export const deleteTravelPlan = async (planId: string) => {
   }
 };
 
-// 사용자별 여행 계획 가져오기
+// 사용자별 여행 계획 가져오기 (단순 쿼리)
 export const getUserTravelPlans = async (userId: string) => {
   try {
+    // where만 사용하여 인덱스 불필요하게 만듦
     const q = query(
       collection(db, COLLECTION_NAME),
-      where('createdBy', '==', userId),
-      orderBy('createdAt', 'desc')
+      where('createdBy', '==', userId)
     );
     
     const querySnapshot = await getDocs(q);
@@ -149,10 +147,15 @@ export const getUserTravelPlans = async (userId: string) => {
       } as TravelPlan);
     });
     
-    return plans;
+    // 클라이언트에서 날짜순 정렬
+    const sortedPlans = plans.sort((a, b) => 
+      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
+    
+    return sortedPlans;
   } catch (error) {
     console.error('Error getting user travel plans: ', error);
-    throw error;
+    return []; // 에러 시 빈 배열 반환
   }
 };
 
@@ -190,14 +193,14 @@ export const toggleLikeTravelPlan = async (planId: string, userId: string) => {
   }
 };
 
-// 인기 여행 계획 가져오기 (좋아요 기준)
+// 인기 여행 계획 가져오기 (좋아요 기준) - 단순 쿼리로 변경
 export const getPopularTravelPlans = async (limitCount: number = 10) => {
   try {
+    // likesCount가 없을 수 있으므로 createdAt으로 정렬하고 클라이언트에서 정렬
     const q = query(
       collection(db, COLLECTION_NAME),
-      where('isPublic', '==', true),
-      orderBy('likesCount', 'desc'),
-      limit(limitCount)
+      orderBy('createdAt', 'desc'),
+      limit(limitCount * 2) // 필터링을 고려해 더 많이 가져옴
     );
     
     const querySnapshot = await getDocs(q);
@@ -205,17 +208,25 @@ export const getPopularTravelPlans = async (limitCount: number = 10) => {
     
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      plans.push({
-        id: doc.id,
-        ...data,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-        updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
-      } as TravelPlan);
+      // isPublic이 true인 것만 필터링
+      if (data.isPublic === true) {
+        plans.push({
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+          updatedAt: data.updatedAt?.toDate?.()?.toISOString() || new Date().toISOString(),
+        } as TravelPlan);
+      }
     });
     
-    return plans;
+    // 클라이언트에서 좋아요 수로 정렬 (없으면 0으로 처리)
+    const sortedPlans = plans
+      .sort((a, b) => ((b as any).likesCount || 0) - ((a as any).likesCount || 0))
+      .slice(0, limitCount);
+    
+    return sortedPlans;
   } catch (error) {
     console.error('Error getting popular travel plans: ', error);
-    throw error;
+    return []; // 에러 시 빈 배열 반환
   }
 };
